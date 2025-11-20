@@ -39,12 +39,12 @@ export class LoginComponent implements OnInit {
     console.log('=== LOGIN COMPONENT INIT ===');
     // Verificar si ya hay un usuario autenticado
     const user = this.supabaseService.getCurrentUser();
-    
+
     if (user) {
       console.log('Usuario ya autenticado detectado:', user.id);
       // Obtener rol y redirigir
       const usuario = await this.supabaseService.obtenerUsuarioPorId(user.id);
-      
+
       if (usuario && usuario.rol) {
         console.log('Usuario ya tiene sesión activa con rol:', usuario.rol);
         this.redirigirPorRol(usuario.rol);
@@ -66,7 +66,7 @@ export class LoginComponent implements OnInit {
     try {
       console.log('=== INICIO LOGIN ===');
       console.log('Email:', this.email);
-      
+
       const { data, error } = await this.supabaseService.signIn(this.email, this.password);
 
       if (error) {
@@ -105,9 +105,9 @@ export class LoginComponent implements OnInit {
   private redirigirPorRol(rol: string) {
     console.log('=== REDIRIGIR POR ROL ===');
     console.log('Rol recibido:', rol);
-    
+
     let ruta = '';
-    
+
     switch (rol) {
       case 'planta':
         ruta = '/dashboard-planta';
@@ -121,9 +121,9 @@ export class LoginComponent implements OnInit {
       default:
         ruta = '/dashboard-planta';
     }
-    
+
     console.log('Navegando a:', ruta);
-    
+
     // Usar navigateByUrl para forzar la navegación
     this.router.navigateByUrl(ruta).then(
       (success) => console.log('Navegación exitosa:', success),

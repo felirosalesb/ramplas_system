@@ -16,10 +16,12 @@ import { MatBadgeModule } from '@angular/material/badge';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { SupabaseService } from '../../services/supabase.service';
 import { NotificationService } from '../../services/notification.service';
 import { Ticket, Rampla } from '../../models/models';
 import { NavbarComponent } from '../navbar/navbar.component';
+import { DetalleTicketComponent } from '../detalle-ticket/detalle-ticket.component';
 
 @Component({
   selector: 'app-dashboard-cd',
@@ -40,6 +42,7 @@ import { NavbarComponent } from '../navbar/navbar.component';
     MatTabsModule,
     MatMenuModule,
     MatDividerModule,
+    MatDialogModule,
     NavbarComponent
   ],
   templateUrl: './dashboard-cd.component.html',
@@ -70,10 +73,14 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
   filtroBusqueda: string = '';
   filtroBusquedaTransito: string = '';
 
+  // Contadores por estado
+  contadoresPorEstado: { [estado: string]: number } = {};
+
   constructor(
     private router: Router,
     private supabaseService: SupabaseService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private dialog: MatDialog
   ) { }
 
   async ngOnInit(): Promise<void> {
@@ -121,6 +128,9 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
       this.ticketsActivos = todosTickets;
       this.ramplas = todasRamplas;
       this.ramplasLibres = ramplasLibres;
+
+      // Calcular contadores por estado
+      this.calcularContadoresPorEstado();
 
       console.log('Tickets pendientes asignación:', this.ticketsPendientes.length);
       console.log('Tickets en tránsito:', this.ticketsEnTransito.length);
@@ -463,7 +473,59 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
     this.modalActivo = null;
   }
 
+  calcularContadoresPorEstado(): void {
+    // Reiniciar contadores
+    this.contadoresPorEstado = {};
+
+    // Contar tickets por estado
+    this.ticketsActivos.forEach(ticket => {
+      const estado = ticket.estado_actual;
+      if (!this.contadoresPorEstado[estado]) {
+        this.contadoresPorEstado[estado] = 0;
+      }
+      this.contadoresPorEstado[estado]++;
+    });
+  }
+
+  getEstadosConContadores(): Array<{ estado: string; cantidad: number }> {
+    return Object.entries(this.contadoresPorEstado)
+      .map(([estado, cantidad]) => ({ estado, cantidad }))
+      .sort((a, b) => b.cantidad - a.cantidad);
+  }
+
+  getIconoEstado(estado: string): string {
+    const iconos: { [key: string]: string } = {
+      'Solicitud Creada': 'add_circle',
+      'Pendiente Asignación': 'pending',
+      'Rampla Asignada': 'local_shipping',
+      'Rampla en Planta': 'factory',
+      'Inicio de Carga': 'play_circle',
+      'Fin de Carga': 'check_circle',
+      'Cargado - Espera Chofer': 'hourglass_empty',
+      'Asignada a Muelle CD': 'warehouse',
+      'Inicio Descarga': 'unarchive',
+      'Fin Descarga': 'done_all',
+      'Libre': 'check_circle_outline',
+      'Rechazada': 'cancel'
+    };
+    return iconos[estado] || 'circle';
+  }
+
+  getEstadoClass(estado: string): string {
+    if (estado.includes('Rechazada')) return 'error';
+    if (estado.includes('Pendiente') || estado.includes('Espera')) return 'warning';
+    if (estado.includes('Libre') || estado.includes('Fin')) return 'success';
+    if (estado.includes('Inicio') || estado.includes('Cargado')) return 'info';
+    return 'primary';
+  }
+
   verDetalleTicket(ticket: Ticket): void {
-    this.router.navigate(['/detalle-ticket', ticket.id]);
+    this.dialog.open(DetalleTicketComponent, {
+      data: { ticketId: ticket.id },
+      width: '900px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
+      panelClass: 'detalle-ticket-dialog'
+    });
   }
 }

@@ -46,6 +46,37 @@
       </mat-card>
     </div>
 
+    <!-- Resumen por Estados -->
+    <mat-card class="estados-resumen-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>analytics</mat-icon>
+          Resumen por Estados
+        </mat-card-title>
+        <mat-card-subtitle>Distribución actual de tickets en cada estado</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="estados-grid">
+          <div *ngFor="let item of getEstadosConContadores()" 
+               class="estado-item"
+               [class.destacado]="item.cantidad > 0">
+            <div class="estado-badge" [class]="'badge-' + getEstadoClass(item.estado)">
+              <mat-icon>{{ getIconoEstado(item.estado) }}</mat-icon>
+            </div>
+            <div class="estado-info">
+              <span class="estado-nombre">{{ item.estado }}</span>
+              <span class="estado-cantidad">{{ item.cantidad }} ticket{{ item.cantidad !== 1 ? 's' : '' }}</span>
+            </div>
+          </div>
+          
+          <div *ngIf="getEstadosConContadores().length === 0" class="estado-vacio">
+            <mat-icon>info</mat-icon>
+            <p>No hay tickets activos en este momento</p>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
     <!-- Tabs Principales -->
     <mat-tab-group>
       

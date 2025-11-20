@@ -386,7 +386,7 @@ export class SupabaseService {
             .from('tickets')
             .select(`
                 *,
-                rampla_asignada:ramplas(*)
+                rampla_asignada:ramplas!rampla_asignada_id(*)
             `)
             .eq('id', ticketId)
             .single();
@@ -400,7 +400,7 @@ export class SupabaseService {
             .from('tickets')
             .select(`
                 *,
-                rampla_asignada:ramplas(*)
+                rampla_asignada:ramplas!rampla_asignada_id(*)
             `)
             .or(`planta_user_id.eq.${userId},cd_user_id.eq.${userId}`)
             .order('fecha_creacion', { ascending: false });

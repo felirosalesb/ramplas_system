@@ -172,6 +172,116 @@
     color: #ccc;
 }
 
+/* Resumen por Estados */
+.estados-resumen-card {
+    margin: 24px 0;
+}
+
+.estados-resumen-card mat-card-header mat-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 20px;
+}
+
+.estados-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.estado-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.estado-item.destacado {
+    background-color: #fff;
+    border-color: #e0e0e0;
+}
+
+.estado-item:hover.destacado {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.estado-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.estado-badge mat-icon {
+    color: white;
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+}
+
+.estado-badge.badge-error {
+    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+}
+
+.estado-badge.badge-warning {
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+}
+
+.estado-badge.badge-success {
+    background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+}
+
+.estado-badge.badge-info {
+    background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+}
+
+.estado-badge.badge-primary {
+    background: linear-gradient(135deg, #673ab7 0%, #512da8 100%);
+}
+
+.estado-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.estado-nombre {
+    font-weight: 500;
+    color: #333;
+    font-size: 14px;
+}
+
+.estado-cantidad {
+    color: #666;
+    font-size: 13px;
+}
+
+.estado-vacio {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px;
+    color: #999;
+}
+
+.estado-vacio mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 12px;
+    color: #ccc;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .filters {
@@ -189,5 +299,9 @@
 
     .tickets-table-container {
         font-size: 12px;
+    }
+
+    .estados-grid {
+        grid-template-columns: 1fr;
     }
 }

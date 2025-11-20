@@ -12,10 +12,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatRadioModule } from '@angular/material/radio';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { SupabaseService } from '../../services/supabase.service';
 import { NotificationService } from '../../services/notification.service';
 import { Ticket, CreateTicketDTO, ConfirmarLlegadaDTO } from '../../models/models';
 import { NavbarComponent } from '../navbar/navbar.component';
+import { DetalleTicketComponent } from '../detalle-ticket/detalle-ticket.component';
 
 @Component({
   selector: 'app-dashboard-planta',
@@ -32,6 +34,7 @@ import { NavbarComponent } from '../navbar/navbar.component';
     MatProgressSpinnerModule,
     MatChipsModule,
     MatRadioModule,
+    MatDialogModule,
     NavbarComponent
   ],
   templateUrl: './dashboard-planta.component.html',
@@ -55,7 +58,8 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private router: Router,
     private supabaseService: SupabaseService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private dialog: MatDialog
   ) {
     this.formularioSolicitud = this.fb.group({
       cantidad_pallet: ['', [Validators.required, Validators.min(1), Validators.max(999)]],
@@ -326,6 +330,22 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
   }
 
   verDetalleTicket(ticket: Ticket): void {
-    this.router.navigate(['/detalle-ticket', ticket.id]);
+    console.log('=== ABRIR MODAL DETALLE ===');
+    console.log('Ticket:', ticket);
+    console.log('Dialog service:', this.dialog);
+
+    try {
+      const dialogRef = this.dialog.open(DetalleTicketComponent, {
+        data: { ticketId: ticket.id },
+        width: '900px',
+        maxWidth: '95vw',
+        maxHeight: '90vh',
+        panelClass: 'detalle-ticket-dialog'
+      });
+
+      console.log('Dialog abierto:', dialogRef);
+    } catch (error) {
+      console.error('Error al abrir modal:', error);
+    }
   }
 }

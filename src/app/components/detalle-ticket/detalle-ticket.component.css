@@ -4,6 +4,13 @@
     padding: 20px;
 }
 
+.detalle-container.modal-content {
+    max-width: 100%;
+    padding: 0;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
 .header {
     display: flex;
     align-items: center;
@@ -112,12 +119,12 @@
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     padding: 16px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     transition: all 0.3s ease;
 }
 
 .timeline-content:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     transform: translateY(-2px);
 }
 
