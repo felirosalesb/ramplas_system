@@ -1,0 +1,524 @@
+<app-navbar></app-navbar>
+
+<div class="dashboard-container">
+  <div class="header">
+    <h1>Dashboard - Centro de Distribución</h1>
+  </div>
+
+  <div class="dashboard-content">
+    
+    <!-- Estadísticas Rápidas -->
+    <div class="stats-cards">
+      <mat-card class="stat-card pendientes">
+        <mat-card-content>
+          <div class="stat-icon">
+            <mat-icon>pending_actions</mat-icon>
+          </div>
+          <div class="stat-info">
+            <h2>{{ ticketsPendientes.length }}</h2>
+            <p>Pendientes de Asignar</p>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card transito">
+        <mat-card-content>
+          <div class="stat-icon">
+            <mat-icon>local_shipping</mat-icon>
+          </div>
+          <div class="stat-info">
+            <h2>{{ ticketsEnTransito.length }}</h2>
+            <p>En Tránsito</p>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card ramplas-libres">
+        <mat-card-content>
+          <div class="stat-icon">
+            <mat-icon>check_circle</mat-icon>
+          </div>
+          <div class="stat-info">
+            <h2>{{ ramplasLibres.length }}</h2>
+            <p>Ramplas Disponibles</p>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Tabs Principales -->
+    <mat-tab-group>
+      
+      <!-- Tab: Solicitudes Pendientes -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">assignment_late</mat-icon>
+          Pendientes de Asignar
+          <span class="badge" *ngIf="ticketsPendientes.length > 0">
+            {{ ticketsPendientes.length }}
+          </span>
+        </ng-template>
+
+        <div class="tab-content">
+          <div *ngIf="cargando" class="loading-container">
+            <mat-spinner></mat-spinner>
+          </div>
+
+          <div *ngIf="!cargando && ticketsPendientes.length === 0" class="empty-state">
+            <mat-icon>check_circle_outline</mat-icon>
+            <h3>No hay solicitudes pendientes</h3>
+            <p>Todas las solicitudes han sido asignadas</p>
+          </div>
+
+          <div class="tickets-grid" *ngIf="!cargando && ticketsPendientes.length > 0">
+            <mat-card *ngFor="let ticket of ticketsPendientes" 
+                      class="ticket-card"
+                      [class.urgente]="estaProximoVencer(ticket.fecha_alerta_cd)">
+              
+              <mat-card-header>
+                <mat-card-title>
+                  Ticket #{{ ticket.id }}
+                  <mat-chip *ngIf="estaProximoVencer(ticket.fecha_alerta_cd)" 
+                            color="warn">
+                    <mat-icon>alarm</mat-icon>
+                    URGENTE
+                  </mat-chip>
+                </mat-card-title>
+                <mat-card-subtitle>
+                  Creado: {{ ticket.fecha_creacion | date:'short' }}
+                </mat-card-subtitle>
+              </mat-card-header>
+
+              <mat-card-content>
+                <div class="ticket-info">
+                  <div class="info-row">
+                    <mat-icon>inventory_2</mat-icon>
+                    <span>{{ ticket.cantidad_pallet }} pallets</span>
+                  </div>
+                  <div class="info-row">
+                    <mat-icon>factory</mat-icon>
+                    <span>Muelle Planta: {{ ticket.muelle_planta }}</span>
+                  </div>
+                  <div class="info-row" *ngIf="ticket.fecha_alerta_cd">
+                    <mat-icon [color]="estaProximoVencer(ticket.fecha_alerta_cd) ? 'warn' : ''">
+                      timer
+                    </mat-icon>
+                    <span [class.text-warn]="estaProximoVencer(ticket.fecha_alerta_cd)">
+                      Tiempo restante: {{ getTiempoRestante(ticket.fecha_alerta_cd) }}
+                    </span>
+                  </div>
+                </div>
+              </mat-card-content>
+
+              <mat-card-actions>
+                <button mat-raised-button 
+                        color="primary"
+                        (click)="abrirModalAsignacion(ticket)">
+                  <mat-icon>add_circle</mat-icon>
+                  Asignar Rampla
+                </button>
+              </mat-card-actions>
+            </mat-card>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Tab: En Tránsito a Bodega -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">local_shipping</mat-icon>
+          En Tránsito
+          <span class="badge" *ngIf="ticketsEnTransito.length > 0">
+            {{ ticketsEnTransito.length }}
+          </span>
+        </ng-template>
+
+        <div class="tab-content">
+          <div *ngIf="cargando" class="loading-container">
+            <mat-spinner></mat-spinner>
+          </div>
+
+          <div *ngIf="!cargando && ticketsEnTransito.length === 0" class="empty-state">
+            <mat-icon>check_circle_outline</mat-icon>
+            <h3>No hay ramplas en tránsito</h3>
+            <p>Todas las ramplas han sido descargadas</p>
+          </div>
+
+          <!-- Filtros -->
+          <div class="filters-row" *ngIf="!cargando && ticketsEnTransito.length > 0">
+            <mat-form-field appearance="outline">
+              <mat-label>Buscar</mat-label>
+              <input matInput 
+                     [(ngModel)]="filtroBusquedaTransito"
+                     placeholder="ID, muelle, rampla...">
+              <mat-icon matPrefix>search</mat-icon>
+            </mat-form-field>
+
+            <button mat-icon-button (click)="cargarDatos()">
+              <mat-icon>refresh</mat-icon>
+            </button>
+          </div>
+
+          <!-- Tabla de Tickets en Tránsito -->
+          <div class="table-container" *ngIf="!cargando && ticketsEnTransito.length > 0">
+            <table mat-table [dataSource]="ticketsTransitoFiltrados" class="tickets-table">
+              
+              <!-- Columna ID -->
+              <ng-container matColumnDef="id">
+                <th mat-header-cell *matHeaderCellDef>ID</th>
+                <td mat-cell *matCellDef="let ticket">#{{ ticket.id }}</td>
+              </ng-container>
+
+              <!-- Columna Rampla -->
+              <ng-container matColumnDef="rampla">
+                <th mat-header-cell *matHeaderCellDef>Rampla</th>
+                <td mat-cell *matCellDef="let ticket">
+                  <mat-chip [color]="getRamplaEstadoColor(ticket.rampla_asignada?.estado || '')">
+                    {{ ticket.rampla_asignada?.nombre || 'N/A' }}
+                  </mat-chip>
+                </td>
+              </ng-container>
+
+              <!-- Columna Estado -->
+              <ng-container matColumnDef="estado">
+                <th mat-header-cell *matHeaderCellDef>Estado</th>
+                <td mat-cell *matCellDef="let ticket">
+                  <mat-chip [color]="getEstadoColor(ticket.estado_actual)">
+                    {{ ticket.estado_actual }}
+                  </mat-chip>
+                </td>
+              </ng-container>
+
+              <!-- Columna Pallets -->
+              <ng-container matColumnDef="pallets">
+                <th mat-header-cell *matHeaderCellDef>Pallets</th>
+                <td mat-cell *matCellDef="let ticket">{{ ticket.cantidad_pallet }}</td>
+              </ng-container>
+
+              <!-- Columna Muelle Planta -->
+              <ng-container matColumnDef="muellePlanta">
+                <th mat-header-cell *matHeaderCellDef>Muelle Planta</th>
+                <td mat-cell *matCellDef="let ticket">{{ ticket.muelle_planta }}</td>
+              </ng-container>
+
+              <!-- Columna Muelle CD -->
+              <ng-container matColumnDef="muelleCD">
+                <th mat-header-cell *matHeaderCellDef>Muelle CD</th>
+                <td mat-cell *matCellDef="let ticket">
+                  {{ ticket.muelle_cd_asignado || '-' }}
+                </td>
+              </ng-container>
+
+              <!-- Columna Acciones -->
+              <ng-container matColumnDef="acciones">
+                <th mat-header-cell *matHeaderCellDef>Acciones</th>
+                <td mat-cell *matCellDef="let ticket">
+                  <button mat-icon-button 
+                          [matMenuTriggerFor]="accionesMenu"
+                          [disabled]="cargando">
+                    <mat-icon>more_vert</mat-icon>
+                  </button>
+                  <mat-menu #accionesMenu="matMenu">
+                    
+                    <button mat-menu-item 
+                            *ngIf="puedeAsignarMuelle(ticket)"
+                            (click)="abrirModalAsignarMuelle(ticket)">
+                      <mat-icon>garage</mat-icon>
+                      Asignar Muelle CD
+                    </button>
+
+                    <button mat-menu-item 
+                            *ngIf="puedeIniciarDescarga(ticket)"
+                            (click)="cambiarEstado(ticket, 'Inicio Descarga')">
+                      <mat-icon>download</mat-icon>
+                      Iniciar Descarga
+                    </button>
+
+                    <button mat-menu-item 
+                            *ngIf="puedeFinalizarDescarga(ticket)"
+                            (click)="cambiarEstado(ticket, 'Fin Descarga')">
+                      <mat-icon>done_all</mat-icon>
+                      Finalizar Descarga
+                    </button>
+
+                    <button mat-menu-item 
+                            *ngIf="ticket.estado_actual === 'Fin Descarga'"
+                            (click)="cambiarEstado(ticket, 'Libre')">
+                      <mat-icon>check_circle</mat-icon>
+                      Completar y Liberar
+                    </button>
+
+                    <mat-divider></mat-divider>
+
+                    <button mat-menu-item>
+                      <mat-icon>visibility</mat-icon>
+                      Ver Detalle
+                    </button>
+                  </mat-menu>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="['id', 'rampla', 'estado', 'pallets', 'muellePlanta', 'muelleCD', 'acciones']"></tr>
+              <tr mat-row *matRowDef="let row; columns: ['id', 'rampla', 'estado', 'pallets', 'muellePlanta', 'muelleCD', 'acciones']"></tr>
+            </table>
+          </div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+</div>
+
+<!-- Modal: Asignar Rampla -->
+<div class="modal-overlay" *ngIf="ticketSeleccionado && modalActivo === 'rampla'" (click)="cerrarModalAsignacion()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <h2>Asignar Rampla al Ticket #{{ ticketSeleccionado.id }}</h2>
+    
+    <div class="ticket-summary">
+      <p><strong>Cantidad de Pallets:</strong> {{ ticketSeleccionado.cantidad_pallet }}</p>
+      <p><strong>Muelle Planta:</strong> {{ ticketSeleccionado.muelle_planta }}</p>
+      <p><strong>Creado:</strong> {{ ticketSeleccionado.fecha_creacion | date:'short' }}</p>
+    </div>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Seleccionar Rampla</mat-label>
+      <mat-select [(ngModel)]="ramplaSeleccionada">
+        <mat-option *ngFor="let rampla of ramplasLibres" [value]="rampla.id">
+          {{ rampla.nombre }}
+        </mat-option>
+      </mat-select>
+      <mat-hint>{{ ramplasLibres.length }} ramplas disponibles</mat-hint>
+    </mat-form-field>
+
+    <div class="modal-actions">
+      <button mat-button (click)="cerrarModalAsignacion()">Cancelar</button>
+      <button mat-raised-button 
+              color="primary"
+              (click)="asignarRampla(ticketSeleccionado)"
+              [disabled]="!ramplaSeleccionada || cargando">
+        <mat-icon>check</mat-icon>
+        Confirmar Asignación
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Asignar Muelle CD -->
+<div class="modal-overlay" *ngIf="ticketSeleccionado && modalActivo === 'muelle'" (click)="cerrarModalAsignarMuelle()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <h2>Asignar Muelle CD al Ticket #{{ ticketSeleccionado.id }}</h2>
+    
+    <div class="ticket-summary">
+      <p><strong>Rampla:</strong> {{ ticketSeleccionado.rampla_asignada?.nombre || 'No asignada' }}</p>
+      <p><strong>Cantidad de Pallets:</strong> {{ ticketSeleccionado.cantidad_pallet }}</p>
+      <p><strong>Estado:</strong> {{ ticketSeleccionado.estado_actual }}</p>
+    </div>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Número de Muelle CD</mat-label>
+      <input matInput 
+             type="number" 
+             [(ngModel)]="muelleCD"
+             placeholder="Ej: 1, 2, 3..."
+             min="1">
+      <mat-hint>Ingrese el número del muelle donde se descargará</mat-hint>
+    </mat-form-field>
+
+    <div class="modal-actions">
+      <button mat-button (click)="cerrarModalAsignarMuelle()">Cancelar</button>
+      <button mat-raised-button 
+              color="primary"
+              (click)="asignarMuelleCD(ticketSeleccionado)"
+              [disabled]="!muelleCD || cargando">
+        <mat-icon>assignment</mat-icon>
+        Confirmar Asignación
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+.dashboard-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.dashboard-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  background-color: #f5f5f5;
+}
+
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+}
+
+.stat-card mat-card-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.stat-icon mat-icon {
+  font-size: 48px;
+  width: 48px;
+  height: 48px;
+}
+
+.stat-info h2 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: bold;
+}
+
+.stat-info p {
+  margin: 0;
+  color: #666;
+}
+
+.tab-content {
+  padding: 20px;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+}
+
+.empty-state mat-icon {
+  font-size: 80px;
+  width: 80px;
+  height: 80px;
+  color: #ccc;
+}
+
+.tickets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.ticket-card {
+  position: relative;
+}
+
+.ticket-card.urgente {
+  border: 2px solid #f44336;
+  box-shadow: 0 0 10px rgba(244, 67, 54, 0.3);
+}
+
+.ticket-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filters-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+.table-container {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.tickets-table {
+  width: 100%;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.ticket-summary {
+  background: #f5f5f5;
+  padding: 15px;
+  border-radius: 4px;
+  margin: 20px 0;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.badge {
+  background: #f44336;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.text-warn {
+  color: #f44336;
+  font-weight: bold;
+}
+</style>

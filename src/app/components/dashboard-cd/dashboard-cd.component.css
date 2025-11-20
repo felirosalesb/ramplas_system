@@ -1,0 +1,193 @@
+.dashboard-container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.header {
+    margin-bottom: 24px;
+}
+
+.header h1 {
+    margin: 0;
+    color: #333;
+    font-size: 28px;
+}
+
+.dashboard-content {
+    margin-top: 20px;
+}
+
+/* Tickets pendientes */
+.pending-section {
+    margin-bottom: 32px;
+}
+
+.pending-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.pending-card {
+    border-left: 4px solid #ff9800;
+}
+
+.pending-card.urgent {
+    border-left-color: #f44336;
+    background-color: #fff3f3;
+}
+
+.alert-badge {
+    background-color: #f44336;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* Tabs y filtros */
+.filters {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.filters mat-form-field {
+    min-width: 200px;
+}
+
+/* Tabla de tickets */
+.tickets-table-container {
+    overflow-x: auto;
+    margin-top: 16px;
+}
+
+.tickets-table {
+    width: 100%;
+}
+
+.estado-chip {
+    font-size: 12px;
+}
+
+/* Cards de ramplas */
+.ramplas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.rampla-card {
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+}
+
+.rampla-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.rampla-card.libre {
+    border-left: 4px solid #4caf50;
+}
+
+.rampla-card.en-servicio {
+    border-left: 4px solid #2196f3;
+}
+
+.rampla-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin: 16px auto;
+}
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.modal-content {
+    max-width: 500px;
+    width: 100%;
+}
+
+.ramplas-selector {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 12px;
+    margin: 20px 0;
+}
+
+.rampla-option {
+    min-width: 100px;
+    height: 80px;
+}
+
+.rampla-option.selected {
+    background-color: #e3f2fd;
+    border: 2px solid #2196f3;
+}
+
+.rampla-option:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Loading y empty states */
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 60px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #999;
+}
+
+.empty-state mat-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
+    color: #ccc;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .filters {
+        flex-direction: column;
+    }
+
+    .filters mat-form-field {
+        width: 100%;
+    }
+
+    .pending-cards,
+    .ramplas-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .tickets-table-container {
+        font-size: 12px;
+    }
+}

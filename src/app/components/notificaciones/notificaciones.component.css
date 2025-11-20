@@ -1,0 +1,140 @@
+.notificaciones-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+}
+
+.header h1 {
+    margin: 0;
+    color: #333;
+}
+
+.section {
+    margin-bottom: 32px;
+}
+
+.section h2 {
+    color: #666;
+    font-size: 18px;
+    margin-bottom: 16px;
+}
+
+.notificaciones-list {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.notif-item {
+    border-bottom: 1px solid #eee;
+    padding: 16px !important;
+    height: auto !important;
+}
+
+.notif-item:last-child {
+    border-bottom: none;
+}
+
+.notif-item.no-leida {
+    background-color: #f0f7ff;
+    border-left: 4px solid #2196f3;
+}
+
+.notif-item.leida {
+    opacity: 0.7;
+}
+
+.notif-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 16px;
+}
+
+.notif-header {
+    display: flex;
+    gap: 12px;
+    flex: 1;
+}
+
+.notif-header mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+}
+
+.icon-info {
+    color: #2196f3;
+}
+
+.icon-warning {
+    color: #ff9800;
+}
+
+.icon-success {
+    color: #4caf50;
+}
+
+.icon-error {
+    color: #f44336;
+}
+
+.notif-info {
+    flex: 1;
+}
+
+.notif-mensaje {
+    margin: 0 0 4px 0;
+    color: #333;
+    font-size: 14px;
+}
+
+.notif-fecha {
+    color: #999;
+    font-size: 12px;
+}
+
+.notif-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #999;
+}
+
+.empty-state mat-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
+    color: #ccc;
+}
+
+@media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .notif-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .notif-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}

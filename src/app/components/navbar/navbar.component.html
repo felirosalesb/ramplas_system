@@ -1,0 +1,48 @@
+<mat-toolbar color="primary" class="navbar">
+  <div class="navbar-container">
+    <div class="navbar-brand">
+      <mat-icon>local_shipping</mat-icon>
+      <span class="brand-text">Sistema Ramplas</span>
+    </div>
+
+    <div class="navbar-actions">
+      <!-- Link al Dashboard según rol -->
+      <button mat-button [routerLink]="dashboardLink" routerLinkActive="active">
+        <mat-icon>home</mat-icon>
+        <span class="button-text">{{ dashboardLabel }}</span>
+      </button>
+
+      <!-- Monitor solo para CD y Admin -->
+      <button mat-button routerLink="/monitor-ramplas" routerLinkActive="active" *ngIf="mostrarMonitor">
+        <mat-icon>monitor</mat-icon>
+        <span class="button-text">Monitor</span>
+      </button>
+
+      <!-- Notificaciones -->
+      <button mat-icon-button (click)="irANotificaciones()">
+        <mat-icon [matBadge]="notificacionesCount" matBadgeColor="warn" [matBadgeHidden]="notificacionesCount === 0">
+          notifications
+        </mat-icon>
+      </button>
+
+      <!-- Menú de usuario -->
+      <button mat-button [matMenuTriggerFor]="userMenu">
+        <mat-icon>account_circle</mat-icon>
+        <span class="button-text">{{ userEmail }}</span>
+        <mat-icon>arrow_drop_down</mat-icon>
+      </button>
+
+      <mat-menu #userMenu="matMenu">
+        <button mat-menu-item disabled>
+          <mat-icon>badge</mat-icon>
+          <span>Rol: {{ userRole | uppercase }}</span>
+        </button>
+        <mat-divider></mat-divider>
+        <button mat-menu-item (click)="cerrarSesion()">
+          <mat-icon>exit_to_app</mat-icon>
+          <span>Cerrar Sesión</span>
+        </button>
+      </mat-menu>
+    </div>
+  </div>
+</mat-toolbar>

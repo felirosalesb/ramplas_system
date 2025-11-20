@@ -1,0 +1,463 @@
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTableModule } from '@angular/material/table';
+import { MatBadgeModule } from '@angular/material/badge';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatDividerModule } from '@angular/material/divider';
+import { SupabaseService } from '../../services/supabase.service';
+import { NotificationService } from '../../services/notification.service';
+import { Ticket, Rampla } from '../../models/models';
+import { NavbarComponent } from '../navbar/navbar.component';
+
+@Component({
+  selector: 'app-dashboard-cd',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatCardModule,
+    MatButtonModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    MatChipsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatTableModule,
+    MatBadgeModule,
+    MatTabsModule,
+    MatMenuModule,
+    MatDividerModule,
+    NavbarComponent
+  ],
+  templateUrl: './dashboard-cd.component.html',
+  styleUrls: ['./dashboard-cd.component.css']
+})
+export class DashboardCdComponent implements OnInit, OnDestroy {
+  // Pestaña 1: Pendientes de Asignar Rampla
+  ticketsPendientes: Ticket[] = [];
+
+  // Pestaña 2: En Tránsito (desde Cargado-Espera Chofer hasta Libre)
+  ticketsEnTransito: Ticket[] = [];
+
+  ticketsActivos: Ticket[] = [];
+  ramplas: Rampla[] = [];
+  ramplasLibres: Rampla[] = [];
+
+  ticketSeleccionado: Ticket | null = null;
+  ramplaSeleccionada: number | null = null;
+  muelleCD: number | null = null;
+  modalActivo: 'rampla' | 'muelle' | null = null;
+
+  cargando = false;
+  private subscriptions: Subscription[] = [];
+  private realtimeChannel: any;
+
+  // Filtros
+  filtroEstado: string = 'todos';
+  filtroBusqueda: string = '';
+  filtroBusquedaTransito: string = '';
+
+  constructor(
+    private supabaseService: SupabaseService,
+    private notificationService: NotificationService
+  ) { }
+
+  async ngOnInit(): Promise<void> {
+    await this.cargarDatos();
+    this.iniciarRealtimeSubscriptions();
+    this.iniciarMonitoreoAlertas();
+
+    // Suscribirse a notificaciones
+    this.subscriptions.push(
+      this.notificationService.notificaciones$.subscribe(notificaciones => {
+        const noLeidas = this.notificationService.getNotificacionesNoLeidas();
+        this.actualizarBadgeNotificaciones(noLeidas);
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.forEach(sub => sub.unsubscribe());
+    if (this.realtimeChannel) {
+      this.realtimeChannel.unsubscribe();
+    }
+  }
+
+  async cargarDatos(): Promise<void> {
+    this.cargando = true;
+    try {
+      console.log('Cargando datos del dashboard CD...');
+      const [todosTickets, todasRamplas, ramplasLibres] = await Promise.all([
+        this.supabaseService.getTicketsActivos(),
+        this.supabaseService.getAllRamplas(),
+        this.supabaseService.getRamplasLibres()
+      ]);
+
+      // Separar tickets por estado
+      // Pestaña 1: Solo "Pendiente Asignación"
+      this.ticketsPendientes = todosTickets.filter(
+        t => t.estado_actual === 'Pendiente Asignación'
+      );
+
+      // Pestaña 2: Desde "Cargado - Espera Chofer" hasta "Libre" (pero excluir "Libre" ya que son históricos)
+      this.ticketsEnTransito = todosTickets.filter(
+        t => ['Cargado - Espera Chofer', 'Asignada a Muelle CD', 'Inicio Descarga'].includes(t.estado_actual)
+      );
+
+      this.ticketsActivos = todosTickets;
+      this.ramplas = todasRamplas;
+      this.ramplasLibres = ramplasLibres;
+
+      console.log('Tickets pendientes asignación:', this.ticketsPendientes.length);
+      console.log('Tickets en tránsito:', this.ticketsEnTransito.length);
+      console.log('Ramplas libres:', this.ramplasLibres.length);
+    } catch (error: any) {
+      console.error('Error al cargar datos:', error);
+      console.error('Mensaje:', error.message);
+      console.error('Detalles:', error.details || error.hint);
+      this.notificationService.agregarNotificacion(
+        `Error al cargar datos: ${error.message || 'Error desconocido'}`,
+        0,
+        'error'
+      );
+    } finally {
+      this.cargando = false;
+    }
+  }
+
+  iniciarRealtimeSubscriptions(): void {
+    // Suscribirse a cambios en tickets
+    this.realtimeChannel = this.supabaseService.subscribeToTickets(async (payload) => {
+      console.log('Cambio en tickets:', payload);
+      await this.cargarDatos();
+
+      // Si es un nuevo ticket pendiente, notificar
+      if (payload.eventType === 'INSERT' && payload.new.estado_actual === 'Pendiente Asignación') {
+        this.notificationService.notificarNuevaSolicitud(
+          payload.new.id,
+          payload.new.cantidad_pallet,
+          payload.new.muelle_planta
+        );
+      }
+    });
+
+    // Suscribirse a cambios en ramplas
+    this.supabaseService.subscribeToRamplas(async () => {
+      await this.cargarDatos();
+    });
+  }
+
+  // Monitoreo de alertas de 2 horas integrado
+  private iniciarMonitoreoAlertas(): void {
+    // Revisión cada 5 minutos
+    setInterval(() => {
+      this.revisarAlertasPendientes();
+    }, 5 * 60 * 1000);
+
+    // Revisión inicial
+    this.revisarAlertasPendientes();
+  }
+
+  private async revisarAlertasPendientes(): Promise<void> {
+    try {
+      const ahora = new Date();
+
+      for (const ticket of this.ticketsPendientes) {
+        if (!ticket.fecha_alerta_cd) continue;
+
+        const fechaAlerta = new Date(ticket.fecha_alerta_cd);
+
+        if (ahora >= fechaAlerta) {
+          this.notificationService.notificarAlertaPendiente(ticket.id);
+
+          // Extender alerta 2 horas más
+          const nuevaFechaAlerta = new Date();
+          nuevaFechaAlerta.setHours(nuevaFechaAlerta.getHours() + 2);
+
+          // Actualizar en base de datos (acceso directo)
+          await this.supabaseService['supabase']
+            .from('tickets')
+            .update({ fecha_alerta_cd: nuevaFechaAlerta.toISOString() })
+            .eq('id', ticket.id);
+        }
+      }
+    } catch (error) {
+      console.error('Error al revisar alertas:', error);
+    }
+  }
+
+  async asignarRampla(ticket: Ticket): Promise<void> {
+    if (!this.ramplaSeleccionada) {
+      alert('Debe seleccionar una rampla');
+      return;
+    }
+
+    this.cargando = true;
+    try {
+      const user = this.supabaseService.getCurrentUser();
+      if (!user) throw new Error('Usuario no autenticado');
+
+      await this.supabaseService.asignarRampla({
+        ticket_id: ticket.id,
+        rampla_id: this.ramplaSeleccionada,
+        cd_user_id: user.id
+      });
+
+      const ramplaAsignada = this.ramplas.find(r => r.id === this.ramplaSeleccionada);
+      this.notificationService.notificarRamplaAsignada(
+        ticket.id,
+        ramplaAsignada?.nombre || `Rampla ${this.ramplaSeleccionada}`
+      );
+
+      await this.cargarDatos();
+      this.cerrarModalAsignacion();
+    } catch (error: any) {
+      console.error('Error al asignar rampla:', error);
+      this.notificationService.agregarNotificacion(
+        error.message || 'Error al asignar rampla',
+        ticket.id,
+        'error'
+      );
+    } finally {
+      this.cargando = false;
+    }
+  }
+
+  async asignarMuelleCD(ticket: Ticket): Promise<void> {
+    console.log('=== ASIGNAR MUELLE CD ===');
+    console.log('Ticket:', ticket.id);
+    console.log('Muelle CD ingresado:', this.muelleCD);
+    console.log('Estado del ticket:', ticket.estado_actual);
+
+    if (!this.muelleCD || this.muelleCD < 1) {
+      console.warn('Muelle inválido:', this.muelleCD);
+      this.notificationService.agregarNotificacion(
+        'Debe ingresar un número de muelle válido (mayor a 0)',
+        ticket.id,
+        'warning'
+      );
+      return;
+    }
+
+    this.cargando = true;
+    try {
+      console.log('Llamando a supabaseService.asignarMuelleCD con muelle:', this.muelleCD);
+      await this.supabaseService.asignarMuelleCD(ticket.id, this.muelleCD);
+      console.log('✅ Muelle asignado exitosamente');
+
+      this.notificationService.agregarNotificacion(
+        `Muelle CD ${this.muelleCD} asignado al ticket #${ticket.id}`,
+        ticket.id,
+        'success'
+      );
+
+      console.log('Recargando datos...');
+      await this.cargarDatos();
+      console.log('Cerrando modal...');
+      this.cerrarModalAsignarMuelle();
+    } catch (error: any) {
+      console.error('❌ Error al asignar muelle:', error);
+      console.error('Mensaje:', error.message);
+      console.error('Detalles:', error);
+      this.notificationService.agregarNotificacion(
+        `Error al asignar muelle CD: ${error.message || 'Error desconocido'}`,
+        ticket.id,
+        'error'
+      );
+    } finally {
+      this.cargando = false;
+      console.log('=== FIN ASIGNAR MUELLE CD ===');
+    }
+  }
+
+  async cambiarEstado(ticket: Ticket, nuevoEstado: any): Promise<void> {
+    this.cargando = true;
+    try {
+      // Usar métodos específicos según el estado
+      if (nuevoEstado === 'Inicio Descarga') {
+        await this.supabaseService.iniciarDescarga(ticket.id);
+        this.notificationService.agregarNotificacion(
+          `Inicio de descarga del ticket #${ticket.id}`,
+          ticket.id,
+          'info'
+        );
+      } else if (nuevoEstado === 'Fin Descarga' || nuevoEstado === 'Libre') {
+        await this.supabaseService.finalizarDescarga(ticket.id);
+        this.notificationService.agregarNotificacion(
+          `Ticket #${ticket.id} completado y rampla liberada`,
+          ticket.id,
+          'success'
+        );
+      } else {
+        // Para otros estados usar el método genérico
+        await this.supabaseService.cambiarEstadoTicket(ticket.id, nuevoEstado);
+        this.notificationService.agregarNotificacion(
+          `Estado del ticket #${ticket.id} actualizado`,
+          ticket.id,
+          'info'
+        );
+      }
+
+      await this.cargarDatos();
+    } catch (error) {
+      console.error('Error al cambiar estado:', error);
+      this.notificationService.agregarNotificacion(
+        'Error al cambiar estado',
+        ticket.id,
+        'error'
+      );
+    } finally {
+      this.cargando = false;
+    }
+  }
+
+  abrirModalAsignacion(ticket: Ticket): void {
+    this.ticketSeleccionado = ticket;
+    this.ramplaSeleccionada = null;
+    this.modalActivo = 'rampla';
+  }
+
+  cerrarModalAsignacion(): void {
+    this.ticketSeleccionado = null;
+    this.ramplaSeleccionada = null;
+    this.modalActivo = null;
+  }
+
+  // Métodos auxiliares
+  getEstadoColor(estado: string): string {
+    const colores: any = {
+      'Pendiente Asignación': 'warn',
+      'Rampla Asignada': 'primary',
+      'Rampla en Planta': 'primary',
+      'Inicio de Carga': 'primary',
+      'Fin de Carga': 'primary',
+      'Cargado - Espera Chofer': 'accent',
+      'Asignada a Muelle CD': 'accent',
+      'Inicio Descarga': 'accent',
+      'Fin Descarga': 'accent',
+      'Libre': 'primary',
+      'Rechazada': 'warn'
+    };
+    return colores[estado] || 'primary';
+  }
+
+  getRamplaEstadoColor(estado: string): string {
+    return estado === 'Libre' ? 'primary' : 'accent';
+  }
+
+  getTiempoRestante(fechaAlerta: string | null): string {
+    if (!fechaAlerta) return '';
+
+    const ahora = new Date();
+    const alerta = new Date(fechaAlerta);
+    const diff = alerta.getTime() - ahora.getTime();
+
+    if (diff <= 0) return 'Vencido';
+
+    const horas = Math.floor(diff / (1000 * 60 * 60));
+    const minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (horas > 0) {
+      return `${horas}h ${minutos}m`;
+    }
+    return `${minutos}m`;
+  }
+
+  estaProximoVencer(fechaAlerta: string | null): boolean {
+    if (!fechaAlerta) return false;
+
+    const ahora = new Date();
+    const alerta = new Date(fechaAlerta);
+    const diff = alerta.getTime() - ahora.getTime();
+    const minutosRestantes = diff / (1000 * 60);
+
+    return minutosRestantes > 0 && minutosRestantes <= 30;
+  }
+
+  get ticketsFiltrados(): Ticket[] {
+    let tickets = this.ticketsActivos;
+
+    // Filtro por estado
+    if (this.filtroEstado !== 'todos') {
+      tickets = tickets.filter(t => t.estado_actual === this.filtroEstado);
+    }
+
+    // Filtro por búsqueda
+    if (this.filtroBusqueda.trim()) {
+      const busqueda = this.filtroBusqueda.toLowerCase();
+      tickets = tickets.filter(t =>
+        t.id.toString().includes(busqueda) ||
+        t.muelle_planta.toString().includes(busqueda) ||
+        t.rampla_asignada?.nombre.toLowerCase().includes(busqueda)
+      );
+    }
+
+    return tickets;
+  }
+
+  get ticketsTransitoFiltrados(): Ticket[] {
+    let tickets = this.ticketsEnTransito;
+
+    // Filtro por búsqueda
+    if (this.filtroBusquedaTransito.trim()) {
+      const busqueda = this.filtroBusquedaTransito.toLowerCase();
+      tickets = tickets.filter(t =>
+        t.id.toString().includes(busqueda) ||
+        t.muelle_planta.toString().includes(busqueda) ||
+        t.muelle_cd_asignado?.toString().includes(busqueda) ||
+        t.rampla_asignada?.nombre.toLowerCase().includes(busqueda)
+      );
+    }
+
+    return tickets;
+  }
+
+  private actualizarBadgeNotificaciones(cantidad: number): void {
+    const badge = document.getElementById('notification-badge');
+    if (badge) {
+      badge.textContent = cantidad.toString();
+      badge.style.display = cantidad > 0 ? 'block' : 'none';
+    }
+  }
+
+  // Métodos para acciones rápidas
+  puedeAsignarRampla(ticket: Ticket): boolean {
+    return ticket.estado_actual === 'Pendiente Asignación';
+  }
+
+  puedeAsignarMuelle(ticket: Ticket): boolean {
+    return ticket.estado_actual === 'Cargado - Espera Chofer';
+  }
+
+  puedeIniciarDescarga(ticket: Ticket): boolean {
+    return ticket.estado_actual === 'Asignada a Muelle CD';
+  }
+
+  puedeFinalizarDescarga(ticket: Ticket): boolean {
+    return ticket.estado_actual === 'Inicio Descarga';
+  }
+
+  abrirModalAsignarMuelle(ticket: Ticket): void {
+    this.ticketSeleccionado = ticket;
+    this.muelleCD = null;
+    this.modalActivo = 'muelle';
+  }
+
+  cerrarModalAsignarMuelle(): void {
+    this.ticketSeleccionado = null;
+    this.muelleCD = null;
+    this.modalActivo = null;
+  }
+}

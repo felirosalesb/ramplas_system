@@ -1,0 +1,314 @@
+.monitor-container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.header h1 {
+    margin: 0;
+    color: #333;
+}
+
+.header-actions {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+/* Estadísticas */
+.stats-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.stat-card mat-card-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px !important;
+}
+
+.stat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+}
+
+.stat-icon mat-icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+}
+
+.stat-icon.libre {
+    background-color: #e8f5e9;
+    color: #4caf50;
+}
+
+.stat-icon.servicio {
+    background-color: #e3f2fd;
+    color: #2196f3;
+}
+
+.stat-icon.utilizacion {
+    background-color: #fff3e0;
+    color: #ff9800;
+}
+
+.stat-icon.total {
+    background-color: #f3e5f5;
+    color: #9c27b0;
+}
+
+.stat-info {
+    flex: 1;
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: 600;
+    color: #333;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #666;
+}
+
+.update-time {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+.update-time mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+/* Grid de ramplas */
+.ramplas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.rampla-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.rampla-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.rampla-card.libre {
+    border-left: 4px solid #4caf50;
+}
+
+.rampla-card:not(.libre) {
+    border-left: 4px solid #2196f3;
+}
+
+.rampla-card mat-card-header {
+    margin-bottom: 16px;
+}
+
+.rampla-card mat-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px !important;
+}
+
+.rampla-info {
+    min-height: 120px;
+}
+
+.ticket-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+}
+
+.info-row strong {
+    color: #666;
+    min-width: 80px;
+}
+
+.disponible {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: #4caf50;
+}
+
+.disponible mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 8px;
+}
+
+/* Lista de ramplas */
+.ramplas-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.rampla-list-item {
+    padding: 16px;
+}
+
+.list-item-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.list-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.rampla-name {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.rampla-name h3 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.list-item-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+    padding: 12px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+}
+
+.detail-column {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.detail-column .label {
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+.detail-column .value {
+    font-size: 14px;
+    color: #333;
+}
+
+/* Estados */
+.estado-libre {
+    color: #4caf50 !important;
+}
+
+.estado-servicio {
+    color: #2196f3 !important;
+}
+
+.estado-pendiente {
+    background-color: #ff9800 !important;
+    color: white !important;
+}
+
+.estado-asignada {
+    background-color: #2196f3 !important;
+    color: white !important;
+}
+
+.estado-planta {
+    background-color: #9c27b0 !important;
+    color: white !important;
+}
+
+.estado-cargando,
+.estado-cargado {
+    background-color: #00bcd4 !important;
+    color: white !important;
+}
+
+.estado-transito {
+    background-color: #ff5722 !important;
+    color: white !important;
+}
+
+.estado-muelle {
+    background-color: #3f51b5 !important;
+    color: white !important;
+}
+
+.estado-descargando,
+.estado-descargado {
+    background-color: #009688 !important;
+    color: white !important;
+}
+
+/* Loading */
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 60px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .stats-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .ramplas-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .list-item-details {
+        grid-template-columns: 1fr;
+    }
+}

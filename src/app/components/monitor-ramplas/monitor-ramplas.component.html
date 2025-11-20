@@ -1,0 +1,166 @@
+<app-navbar></app-navbar>
+
+<div class="monitor-container">
+  <div class="header">
+    <h1>Monitor de Ramplas</h1>
+    <div class="header-actions">
+      <button mat-icon-button (click)="refrescar()" matTooltip="Refrescar">
+        <mat-icon>refresh</mat-icon>
+      </button>
+      <mat-button-toggle-group [(value)]="vistaActual">
+        <mat-button-toggle value="grid">
+          <mat-icon>grid_view</mat-icon>
+        </mat-button-toggle>
+        <mat-button-toggle value="lista">
+          <mat-icon>view_list</mat-icon>
+        </mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+  </div>
+
+  <!-- Estadísticas -->
+  <div class="stats-cards">
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <div class="stat-icon libre">
+          <mat-icon>check_circle</mat-icon>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value">{{ ramplasLibres }}</div>
+          <div class="stat-label">Ramplas Libres</div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <div class="stat-icon servicio">
+          <mat-icon>local_shipping</mat-icon>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value">{{ ramplasEnServicio }}</div>
+          <div class="stat-label">En Servicio</div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <div class="stat-icon utilizacion">
+          <mat-icon>donut_large</mat-icon>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value">{{ porcentajeUtilizacion }}%</div>
+          <div class="stat-label">Utilización</div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <div class="stat-icon total">
+          <mat-icon>inventory_2</mat-icon>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value">{{ ramplas.length }}</div>
+          <div class="stat-label">Total Ramplas</div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <div class="update-time">
+    <mat-icon>schedule</mat-icon>
+    Última actualización: {{ ultimaActualizacion | date:'HH:mm:ss' }}
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="cargando" class="loading-container">
+    <mat-spinner></mat-spinner>
+  </div>
+
+  <!-- Vista Grid -->
+  <div *ngIf="vistaActual === 'grid' && !cargando" class="ramplas-grid">
+    <mat-card *ngFor="let rampla of ramplas" class="rampla-card" [class.libre]="rampla.estado === 'Libre'">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon [class]="getEstadoColorClass(rampla.estado)">
+            {{ obtenerIconoEstado(rampla.estado) }}
+          </mat-icon>
+          {{ rampla.nombre }}
+        </mat-card-title>
+        <mat-card-subtitle>
+          <mat-chip [color]="rampla.estado === 'Libre' ? 'primary' : 'accent'">
+            {{ rampla.estado }}
+          </mat-chip>
+        </mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        <div class="rampla-info">
+          <div *ngIf="rampla.ticket" class="ticket-info">
+            <div class="info-row">
+              <strong>Ticket:</strong> #{{ rampla.ticket.id }}
+            </div>
+            <div class="info-row">
+              <strong>Estado:</strong>
+              <mat-chip size="small" [class]="getEstadoTicketColorClass(rampla.ticket.estado_actual)">
+                {{ rampla.ticket.estado_actual }}
+              </mat-chip>
+            </div>
+            <div class="info-row">
+              <strong>Pallets:</strong> {{ rampla.ticket.cantidad_pallet }}
+            </div>
+            <div class="info-row" *ngIf="rampla.tiempoEnEstado">
+              <strong>Tiempo:</strong> {{ rampla.tiempoEnEstado }}
+            </div>
+          </div>
+          <div *ngIf="!rampla.ticket" class="disponible">
+            <mat-icon>check_circle_outline</mat-icon>
+            <p>Disponible</p>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Vista Lista -->
+  <div *ngIf="vistaActual === 'lista' && !cargando" class="ramplas-lista">
+    <mat-card *ngFor="let rampla of ramplas" class="rampla-list-item">
+      <div class="list-item-content">
+        <div class="list-item-header">
+          <div class="rampla-name">
+            <mat-icon [class]="getEstadoColorClass(rampla.estado)">
+              {{ obtenerIconoEstado(rampla.estado) }}
+            </mat-icon>
+            <h3>{{ rampla.nombre }}</h3>
+          </div>
+          <mat-chip [color]="rampla.estado === 'Libre' ? 'primary' : 'accent'">
+            {{ rampla.estado }}
+          </mat-chip>
+        </div>
+
+        <div class="list-item-details" *ngIf="rampla.ticket">
+          <div class="detail-column">
+            <span class="label">Ticket:</span>
+            <span class="value">#{{ rampla.ticket.id }}</span>
+          </div>
+          <div class="detail-column">
+            <span class="label">Estado:</span>
+            <mat-chip size="small" [class]="getEstadoTicketColorClass(rampla.ticket.estado_actual)">
+              {{ rampla.ticket.estado_actual }}
+            </mat-chip>
+          </div>
+          <div class="detail-column">
+            <span class="label">Pallets:</span>
+            <span class="value">{{ rampla.ticket.cantidad_pallet }}</span>
+          </div>
+          <div class="detail-column" *ngIf="rampla.tiempoEnEstado">
+            <span class="label">Tiempo:</span>
+            <span class="value">{{ rampla.tiempoEnEstado }}</span>
+          </div>
+        </div>
+      </div>
+    </mat-card>
+  </div>
+</div>

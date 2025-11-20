@@ -1,0 +1,72 @@
+<app-navbar></app-navbar>
+
+<div class="notificaciones-container">
+  <div class="header">
+    <h1>Notificaciones</h1>
+    <button mat-raised-button color="primary" (click)="marcarTodasComoLeidas()" [disabled]="notificacionesNoLeidas.length === 0">
+      <mat-icon>done_all</mat-icon>
+      Marcar Todas como Leídas
+    </button>
+  </div>
+
+  <!-- Notificaciones No Leídas -->
+  <div *ngIf="notificacionesNoLeidas.length > 0" class="section">
+    <h2>No Leídas ({{ notificacionesNoLeidas.length }})</h2>
+    <mat-list class="notificaciones-list">
+      <mat-list-item *ngFor="let notif of notificacionesNoLeidas" class="notif-item no-leida">
+        <div class="notif-content">
+          <div class="notif-header">
+            <mat-icon [class]="'icon-' + notif.tipo">{{ getIcono(notif.tipo) }}</mat-icon>
+            <div class="notif-info">
+              <p class="notif-mensaje">{{ notif.mensaje }}</p>
+              <span class="notif-fecha">{{ notif.timestamp | date:'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+          </div>
+          <div class="notif-actions">
+            <button mat-icon-button (click)="marcarComoLeida(notif)" matTooltip="Marcar como leída">
+              <mat-icon>done</mat-icon>
+            </button>
+            <button mat-icon-button (click)="irATicket(notif.ticket_id)" matTooltip="Ver ticket">
+              <mat-icon>visibility</mat-icon>
+            </button>
+            <button mat-icon-button (click)="eliminar(notif)" matTooltip="Eliminar">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        </div>
+      </mat-list-item>
+    </mat-list>
+  </div>
+
+  <!-- Notificaciones Leídas -->
+  <div *ngIf="notificacionesLeidas.length > 0" class="section">
+    <h2>Leídas</h2>
+    <mat-list class="notificaciones-list">
+      <mat-list-item *ngFor="let notif of notificacionesLeidas" class="notif-item leida">
+        <div class="notif-content">
+          <div class="notif-header">
+            <mat-icon [class]="'icon-' + notif.tipo">{{ getIcono(notif.tipo) }}</mat-icon>
+            <div class="notif-info">
+              <p class="notif-mensaje">{{ notif.mensaje }}</p>
+              <span class="notif-fecha">{{ notif.timestamp | date:'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+          </div>
+          <div class="notif-actions">
+            <button mat-icon-button (click)="irATicket(notif.ticket_id)" matTooltip="Ver ticket">
+              <mat-icon>visibility</mat-icon>
+            </button>
+            <button mat-icon-button (click)="eliminar(notif)" matTooltip="Eliminar">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        </div>
+      </mat-list-item>
+    </mat-list>
+  </div>
+
+  <!-- Estado vacío -->
+  <div *ngIf="notificaciones.length === 0" class="empty-state">
+    <mat-icon>notifications_none</mat-icon>
+    <p>No tienes notificaciones</p>
+  </div>
+</div>
