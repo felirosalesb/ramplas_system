@@ -6,6 +6,7 @@ import { MonitorRamplasComponent } from './components/monitor-ramplas/monitor-ra
 import { DetalleTicketComponent } from './components/detalle-ticket/detalle-ticket.component';
 import { NotificacionesComponent } from './components/notificaciones/notificaciones.component';
 import { AuthGuard } from './guards/auth.guard';
+import { DashboardAdminComponent } from './components/dashboard-admin/dashboard-admin.component';
 
 export const routes: Routes = [
     {
@@ -16,6 +17,11 @@ export const routes: Routes = [
     {
         path: 'login',
         component: LoginComponent
+    },
+    {
+        path: 'dashboard-admin',
+        component: DashboardAdminComponent,
+        canActivate: [AuthGuard]
     },
     {
         path: 'dashboard-planta',

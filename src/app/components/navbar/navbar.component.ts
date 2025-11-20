@@ -65,7 +65,7 @@ export class NavbarComponent implements OnInit {
       case 'cd':
         return '/dashboard-cd';
       case 'admin':
-        return '/monitor-ramplas';
+        return '/dashboard-admin';
       default:
         return '/';
     }

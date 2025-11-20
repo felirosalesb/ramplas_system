@@ -480,6 +480,7 @@ export class SupabaseService {
             .from('ramplas')
             .select('*')
             .eq('estado', 'Libre')
+            .eq('activo', true)
             .order('id', { ascending: true });
 
         if (error) throw error;
@@ -490,10 +491,130 @@ export class SupabaseService {
         const { data, error } = await this.supabase
             .from('ramplas')
             .select('*')
+            .eq('activo', true)
             .order('id', { ascending: true });
 
         if (error) throw error;
         return data || [];
+    }
+
+    // Para admin: ver todas las ramplas incluyendo inactivas
+    async getAllRamplasAdmin(): Promise<Rampla[]> {
+        const { data, error } = await this.supabase
+            .from('ramplas')
+            .select('*')
+            .order('id', { ascending: true });
+
+        if (error) throw error;
+        return data || [];
+    }
+
+    async crearRampla(rampla: { nombre: string; tipo_rampla: string; activo: boolean }): Promise<Rampla> {
+        const user = this.getCurrentUser();
+        if (!user) throw new Error('Usuario no autenticado');
+
+        console.log('Creando rampla:', rampla);
+
+        const { data, error } = await this.supabase
+            .from('ramplas')
+            .insert({
+                nombre: rampla.nombre,
+                tipo_rampla: rampla.tipo_rampla,
+                activo: rampla.activo,
+                estado: 'Libre'
+            })
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error al crear rampla:', error);
+            if (error.code === '23505') {
+                throw new Error('Ya existe una rampla con ese nombre');
+            }
+            throw error;
+        }
+
+        console.log('Rampla creada:', data);
+        return data;
+    }
+
+    async actualizarRampla(id: number, rampla: { nombre: string; tipo_rampla: string; activo: boolean }): Promise<void> {
+        const user = this.getCurrentUser();
+        if (!user) throw new Error('Usuario no autenticado');
+
+        console.log('Actualizando rampla:', id, rampla);
+
+        const { error } = await this.supabase
+            .from('ramplas')
+            .update({
+                nombre: rampla.nombre,
+                tipo_rampla: rampla.tipo_rampla,
+                activo: rampla.activo,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error al actualizar rampla:', error);
+            if (error.code === '23505') {
+                throw new Error('Ya existe una rampla con ese nombre');
+            }
+            throw error;
+        }
+
+        console.log('Rampla actualizada correctamente');
+    }
+
+    async cambiarEstadoActivoRampla(id: number, activo: boolean): Promise<void> {
+        const user = this.getCurrentUser();
+        if (!user) throw new Error('Usuario no autenticado');
+
+        console.log('Cambiando estado activo de rampla:', id, activo);
+
+        const { error } = await this.supabase
+            .from('ramplas')
+            .update({
+                activo: activo,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error al cambiar estado:', error);
+            throw error;
+        }
+
+        console.log('Estado de rampla actualizado');
+    }
+
+    async eliminarRampla(id: number): Promise<void> {
+        const user = this.getCurrentUser();
+        if (!user) throw new Error('Usuario no autenticado');
+
+        console.log('Eliminando rampla:', id);
+
+        // Verificar si la rampla está en uso
+        const { data: ticketsActivos } = await this.supabase
+            .from('tickets')
+            .select('id')
+            .eq('rampla_asignada_id', id)
+            .neq('estado_actual', 'Libre');
+
+        if (ticketsActivos && ticketsActivos.length > 0) {
+            throw new Error('No se puede eliminar una rampla que está en uso');
+        }
+
+        const { error } = await this.supabase
+            .from('ramplas')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error al eliminar rampla:', error);
+            throw error;
+        }
+
+        console.log('Rampla eliminada correctamente');
     }
 
     async getRegistrosTiempo(ticketId: number): Promise<RegistroTiempo[]> {

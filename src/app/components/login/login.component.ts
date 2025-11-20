@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -24,7 +24,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
   templateUrl: './login.component.html',
   styleUrl: './login.component.css'
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   email: string = '';
   password: string = '';
   loading: boolean = false;
@@ -34,6 +34,25 @@ export class LoginComponent {
     private supabaseService: SupabaseService,
     private router: Router
   ) { }
+
+  async ngOnInit() {
+    console.log('=== LOGIN COMPONENT INIT ===');
+    // Verificar si ya hay un usuario autenticado
+    const user = this.supabaseService.getCurrentUser();
+    
+    if (user) {
+      console.log('Usuario ya autenticado detectado:', user.id);
+      // Obtener rol y redirigir
+      const usuario = await this.supabaseService.obtenerUsuarioPorId(user.id);
+      
+      if (usuario && usuario.rol) {
+        console.log('Usuario ya tiene sesión activa con rol:', usuario.rol);
+        this.redirigirPorRol(usuario.rol);
+      }
+    } else {
+      console.log('No hay usuario autenticado, mostrando formulario de login');
+    }
+  }
 
   async onSubmit() {
     if (!this.email || !this.password) {
@@ -45,19 +64,34 @@ export class LoginComponent {
     this.errorMessage = '';
 
     try {
+      console.log('=== INICIO LOGIN ===');
+      console.log('Email:', this.email);
+      
       const { data, error } = await this.supabaseService.signIn(this.email, this.password);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error en signIn:', error);
+        throw error;
+      }
 
       const user = data.user;
-      if (!user) throw new Error('Usuario no encontrado');
+      if (!user) {
+        console.error('No se obtuvo usuario de Supabase Auth');
+        throw new Error('Usuario no encontrado');
+      }
+
+      console.log('Usuario autenticado:', user.id, user.email);
 
       // Obtener rol del usuario desde la tabla usuarios
       const usuario = await this.supabaseService.obtenerUsuarioPorId(user.id);
 
+      console.log('Usuario obtenido de tabla usuarios:', usuario);
+
       if (usuario && usuario.rol) {
+        console.log('Redirigiendo a rol:', usuario.rol);
         this.redirigirPorRol(usuario.rol);
       } else {
+        console.error('No se pudo obtener el rol. Usuario:', usuario);
         throw new Error('No se pudo determinar el rol del usuario');
       }
     } catch (error: any) {
@@ -69,18 +103,31 @@ export class LoginComponent {
   }
 
   private redirigirPorRol(rol: string) {
+    console.log('=== REDIRIGIR POR ROL ===');
+    console.log('Rol recibido:', rol);
+    
+    let ruta = '';
+    
     switch (rol) {
       case 'planta':
-        this.router.navigate(['/dashboard-planta']);
+        ruta = '/dashboard-planta';
         break;
       case 'cd':
-        this.router.navigate(['/dashboard-cd']);
+        ruta = '/dashboard-cd';
         break;
       case 'admin':
-        this.router.navigate(['/monitor-ramplas']);
+        ruta = '/dashboard-admin';
         break;
       default:
-        this.router.navigate(['/dashboard-planta']);
+        ruta = '/dashboard-planta';
     }
+    
+    console.log('Navegando a:', ruta);
+    
+    // Usar navigateByUrl para forzar la navegación
+    this.router.navigateByUrl(ruta).then(
+      (success) => console.log('Navegación exitosa:', success),
+      (error) => console.error('Error en navegación:', error)
+    );
   }
 }
