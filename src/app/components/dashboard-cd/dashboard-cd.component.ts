@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { MatCardModule } from '@angular/material/card';
@@ -70,6 +71,7 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
   filtroBusquedaTransito: string = '';
 
   constructor(
+    private router: Router,
     private supabaseService: SupabaseService,
     private notificationService: NotificationService
   ) { }
@@ -459,5 +461,9 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
     this.ticketSeleccionado = null;
     this.muelleCD = null;
     this.modalActivo = null;
+  }
+
+  verDetalleTicket(ticket: Ticket): void {
+    this.router.navigate(['/detalle-ticket', ticket.id]);
   }
 }

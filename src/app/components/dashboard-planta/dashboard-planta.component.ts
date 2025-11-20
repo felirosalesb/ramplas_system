@@ -1,6 +1,7 @@
 // src/app/components/dashboard-planta/dashboard-planta.component.ts
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { MatCardModule } from '@angular/material/card';
@@ -52,6 +53,7 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
 
   constructor(
     private fb: FormBuilder,
+    private router: Router,
     private supabaseService: SupabaseService,
     private notificationService: NotificationService
   ) {
@@ -323,13 +325,7 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
     return '';
   }
 
-  async verDetalleTicket(ticket: Ticket): Promise<void> {
-    try {
-      const registros = await this.supabaseService.getRegistrosTiempo(ticket.id);
-      console.log('Historial del ticket:', registros);
-      // Aquí podrías abrir un modal con el detalle completo
-    } catch (error) {
-      console.error('Error al cargar detalle:', error);
-    }
+  verDetalleTicket(ticket: Ticket): void {
+    this.router.navigate(['/detalle-ticket', ticket.id]);
   }
 }

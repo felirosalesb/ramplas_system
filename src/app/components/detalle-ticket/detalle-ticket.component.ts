@@ -73,7 +73,47 @@ export class DetalleTicketComponent implements OnInit {
     return horas > 0 ? `${horas}h ${mins}m` : `${mins}m`;
   }
 
+  getIconoEstado(estado: string): string {
+    const iconos: any = {
+      'Solicitud Creada': 'add_circle',
+      'Pendiente Asignación': 'pending',
+      'Rampla Asignada': 'local_shipping',
+      'Rampla en Planta': 'factory',
+      'Inicio de Carga': 'play_circle',
+      'Fin de Carga': 'check_circle',
+      'Cargado - Espera Chofer': 'hourglass_empty',
+      'Asignada a Muelle CD': 'warehouse',
+      'Inicio Descarga': 'unarchive',
+      'Fin Descarga': 'done_all',
+      'Libre': 'check_circle_outline',
+      'Rechazada': 'cancel'
+    };
+    return iconos[estado] || 'circle';
+  }
+
+  getEstadoClass(estado: string): string {
+    if (estado.includes('Rechazada')) return 'error';
+    if (estado.includes('Pendiente') || estado.includes('Espera')) return 'warning';
+    if (estado.includes('Libre') || estado.includes('Fin')) return 'success';
+    return 'info';
+  }
+
   volver() {
-    this.router.navigate(['/dashboard-planta']);
+    // Navegar de vuelta según el rol del usuario
+    const usuario = this.supabaseService.getCurrentUser();
+    if (usuario) {
+      this.supabaseService.obtenerUsuarioPorId(usuario.id).then(user => {
+        if (user?.rol === 'cd') {
+          this.router.navigate(['/dashboard-cd']);
+        } else {
+          this.router.navigate(['/dashboard-planta']);
+        }
+      }).catch(() => {
+        // Si hay error, intentar ir atrás en el historial
+        window.history.back();
+      });
+    } else {
+      window.history.back();
+    }
   }
 }
