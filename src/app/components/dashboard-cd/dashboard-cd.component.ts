@@ -16,10 +16,12 @@ import { MatBadgeModule } from '@angular/material/badge';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { SupabaseService } from '../../services/supabase.service';
 import { NotificationService } from '../../services/notification.service';
 import { Ticket, Rampla } from '../../models/models';
 import { NavbarComponent } from '../navbar/navbar.component';
+import { DetalleTicketComponent } from '../detalle-ticket/detalle-ticket.component';
 
 @Component({
   selector: 'app-dashboard-cd',
@@ -40,6 +42,7 @@ import { NavbarComponent } from '../navbar/navbar.component';
     MatTabsModule,
     MatMenuModule,
     MatDividerModule,
+    MatDialogModule,
     NavbarComponent
   ],
   templateUrl: './dashboard-cd.component.html',
@@ -49,7 +52,10 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
   // Pestaña 1: Pendientes de Asignar Rampla
   ticketsPendientes: Ticket[] = [];
 
-  // Pestaña 2: En Tránsito (desde Cargado-Espera Chofer hasta Libre)
+  // Pestaña 2: Ramplas en Planta
+  ticketsEnPlanta: Ticket[] = [];
+
+  // Pestaña 3: En Tránsito (desde Cargado-Espera Chofer hasta Libre)
   ticketsEnTransito: Ticket[] = [];
 
   ticketsActivos: Ticket[] = [];
@@ -70,10 +76,14 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
   filtroBusqueda: string = '';
   filtroBusquedaTransito: string = '';
 
+  // Contadores por estado de ramplas
+  contadoresEstadoRamplas: { [estado: string]: number } = {};
+
   constructor(
     private router: Router,
     private supabaseService: SupabaseService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private dialog: MatDialog
   ) { }
 
   async ngOnInit(): Promise<void> {
@@ -109,20 +119,29 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
 
       // Separar tickets por estado
       // Pestaña 1: Solo "Pendiente Asignación"
-      this.ticketsPendientes = todosTickets.filter(
-        t => t.estado_actual === 'Pendiente Asignación'
-      );
+      this.ticketsPendientes = todosTickets
+        .filter(t => t.estado_actual === 'Pendiente Asignación')
+        .sort((a, b) => new Date(a.fecha_creacion).getTime() - new Date(b.fecha_creacion).getTime());
 
-      // Pestaña 2: Desde "Cargado - Espera Chofer" hasta "Libre" (pero excluir "Libre" ya que son históricos)
-      this.ticketsEnTransito = todosTickets.filter(
-        t => ['Cargado - Espera Chofer', 'Asignada a Muelle CD', 'Inicio Descarga'].includes(t.estado_actual)
-      );
+      // Pestaña 2: Ramplas en Planta (desde "Rampla Asignada" hasta "Fin de Carga")
+      this.ticketsEnPlanta = todosTickets
+        .filter(t => ['Rampla Asignada', 'Rampla en Planta', 'Inicio de Carga', 'Fin de Carga'].includes(t.estado_actual))
+        .sort((a, b) => new Date(a.fecha_creacion).getTime() - new Date(b.fecha_creacion).getTime());
+
+      // Pestaña 3: En Tránsito (desde "Cargado - Espera Chofer" hasta "Inicio Descarga")
+      this.ticketsEnTransito = todosTickets
+        .filter(t => ['Cargado - Espera Chofer', 'Asignada a Muelle CD', 'Inicio Descarga'].includes(t.estado_actual))
+        .sort((a, b) => new Date(a.fecha_creacion).getTime() - new Date(b.fecha_creacion).getTime());
 
       this.ticketsActivos = todosTickets;
       this.ramplas = todasRamplas;
       this.ramplasLibres = ramplasLibres;
 
+      // Calcular contadores por estado de ramplas
+      this.calcularContadoresEstadoRamplas();
+
       console.log('Tickets pendientes asignación:', this.ticketsPendientes.length);
+      console.log('Tickets en planta:', this.ticketsEnPlanta.length);
       console.log('Tickets en tránsito:', this.ticketsEnTransito.length);
       console.log('Ramplas libres:', this.ramplasLibres.length);
     } catch (error: any) {
@@ -176,6 +195,7 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
     try {
       const ahora = new Date();
 
+      // Alertas para tickets pendientes (2 horas)
       for (const ticket of this.ticketsPendientes) {
         if (!ticket.fecha_alerta_cd) continue;
 
@@ -195,8 +215,47 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
             .eq('id', ticket.id);
         }
       }
+
+      // Alertas para ramplas asignadas por más de 15 minutos
+      await this.revisarAlertasRamplasAsignadas();
     } catch (error) {
       console.error('Error al revisar alertas:', error);
+    }
+  }
+
+  private async revisarAlertasRamplasAsignadas(): Promise<void> {
+    try {
+      const ahora = new Date();
+      const limiteTiempo = 15 * 60 * 1000; // 15 minutos en milisegundos
+
+      // Buscar en tickets en planta que están en estado 'Rampla Asignada'
+      for (const ticket of this.ticketsEnPlanta) {
+        if (ticket.estado_actual !== 'Rampla Asignada') continue;
+
+        // Obtener el tiempo cuando se asignó la rampla
+        const { data: tiempos } = await this.supabaseService['supabase']
+          .from('registros_tiempo')
+          .select('fecha_hora')
+          .eq('ticket_id', ticket.id)
+          .eq('estado', 'Rampla Asignada')
+          .order('fecha_hora', { ascending: false })
+          .limit(1);
+
+        if (tiempos && tiempos.length > 0) {
+          const fechaAsignacion = new Date(tiempos[0].fecha_hora);
+          const tiempoTranscurrido = ahora.getTime() - fechaAsignacion.getTime();
+
+          if (tiempoTranscurrido > limiteTiempo) {
+            this.notificationService.agregarNotificacion(
+              `⚠️ Rampla asignada hace más de 15 minutos - Ticket #${ticket.id}`,
+              ticket.id,
+              'warning'
+            );
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error al revisar alertas de ramplas asignadas:', error);
     }
   }
 
@@ -463,7 +522,92 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
     this.modalActivo = null;
   }
 
+  calcularContadoresEstadoRamplas(): void {
+    // Inicializar solo los estados donde la rampla está activa (sin Solicitud Creada y Pendiente Asignación)
+    this.contadoresEstadoRamplas = {
+      'Rampla Asignada': 0,
+      'Rampla en Planta': 0,
+      'Inicio de Carga': 0,
+      'Fin de Carga': 0,
+      'Cargado - Espera Chofer': 0,
+      'Asignada a Muelle CD': 0,
+      'Inicio Descarga': 0,
+      'Fin Descarga': 0,
+      'Libre': 0,
+      'Rechazada': 0
+    };
+
+    // Contar tickets activos por estado (solo estados donde hay rampla asignada)
+    this.ticketsActivos.forEach(ticket => {
+      const estado = ticket.estado_actual;
+      if (this.contadoresEstadoRamplas[estado] !== undefined) {
+        this.contadoresEstadoRamplas[estado]++;
+      }
+    });
+  }
+
+  getEstadosRamplasConContadores(): Array<{ estado: string; cantidad: number }> {
+    // Devolver estados donde la rampla está en uso (sin Solicitud Creada y Pendiente Asignación)
+    const ordenEstados = [
+      'Rampla Asignada',
+      'Rampla en Planta',
+      'Inicio de Carga',
+      'Fin de Carga',
+      'Cargado - Espera Chofer',
+      'Asignada a Muelle CD',
+      'Inicio Descarga',
+      'Fin Descarga',
+      'Libre',
+      'Rechazada'
+    ];
+
+    return ordenEstados.map(estado => ({
+      estado,
+      cantidad: this.contadoresEstadoRamplas[estado] || 0
+    }));
+  }
+
+  getIconoEstadoRampla(estado: string): string {
+    const iconos: { [key: string]: string } = {
+      'Solicitud Creada': 'add_circle',
+      'Pendiente Asignación': 'pending',
+      'Rampla Asignada': 'local_shipping',
+      'Rampla en Planta': 'factory',
+      'Inicio de Carga': 'play_circle',
+      'Fin de Carga': 'check_circle',
+      'Cargado - Espera Chofer': 'hourglass_empty',
+      'Asignada a Muelle CD': 'warehouse',
+      'Inicio Descarga': 'unarchive',
+      'Fin Descarga': 'done_all',
+      'Libre': 'check_circle_outline',
+      'Rechazada': 'cancel'
+    };
+    return iconos[estado] || 'circle';
+  }
+
+  getEstadoRamplaClass(estado: string): string {
+    if (estado.includes('Rechazada')) return 'error';
+    if (estado.includes('Pendiente') || estado.includes('Espera')) return 'warning';
+    if (estado.includes('Libre') || estado.includes('Fin')) return 'success';
+    if (estado.includes('Inicio') || estado.includes('Cargado')) return 'info';
+    return 'primary';
+  }
+
+  getEstadoClass(estado: string): string {
+    if (estado.includes('Rechazada')) return 'error';
+    if (estado.includes('Pendiente') || estado.includes('Espera')) return 'warning';
+    if (estado.includes('Libre') || estado.includes('Fin')) return 'success';
+    if (estado.includes('Inicio') || estado.includes('Cargado')) return 'info';
+    return 'primary';
+  }
+
   verDetalleTicket(ticket: Ticket): void {
-    this.router.navigate(['/detalle-ticket', ticket.id]);
+    this.dialog.open(DetalleTicketComponent, {
+      data: { ticketId: ticket.id },
+      width: '900px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
+      panelClass: 'detalle-ticket-dialog'
+    });
   }
 }

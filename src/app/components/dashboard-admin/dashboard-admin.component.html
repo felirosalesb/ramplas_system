@@ -1,0 +1,226 @@
+<app-navbar></app-navbar>
+
+<div class="dashboard-container">
+  <div class="header">
+    <h1>Dashboard - Administración de Ramplas</h1>
+    <button mat-raised-button color="primary" (click)="abrirModalNuevo()">
+      <mat-icon>add</mat-icon>
+      Nueva Rampla
+    </button>
+  </div>
+
+  <div class="dashboard-content">
+    
+    <!-- Estadísticas -->
+    <div class="stats-cards">
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-icon">
+            <mat-icon>local_shipping</mat-icon>
+          </div>
+          <div class="stat-info">
+            <h2>{{ ramplas.length }}</h2>
+            <p>Total Ramplas</p>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card activas">
+        <mat-card-content>
+          <div class="stat-icon">
+            <mat-icon>check_circle</mat-icon>
+          </div>
+          <div class="stat-info">
+            <h2>{{ ramplasActivas }}</h2>
+            <p>Activas</p>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card inactivas">
+        <mat-card-content>
+          <div class="stat-icon">
+            <mat-icon>block</mat-icon>
+          </div>
+          <div class="stat-info">
+            <h2>{{ ramplasInactivas }}</h2>
+            <p>Inactivas</p>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Filtros -->
+    <mat-card class="filtros-card">
+      <mat-card-content>
+        <div class="filtros-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Buscar</mat-label>
+            <input matInput 
+                   [(ngModel)]="filtroBusqueda"
+                   (ngModelChange)="aplicarFiltros()"
+                   placeholder="Nombre o ID">
+            <mat-icon matPrefix>search</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Tipo</mat-label>
+            <mat-select [(ngModel)]="filtroTipo" (ngModelChange)="aplicarFiltros()">
+              <mat-option value="todos">Todos</mat-option>
+              <mat-option value="frugon_cerrado">Frugón Cerrado</mat-option>
+              <mat-option value="cortina">Cortina</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Estado</mat-label>
+            <mat-select [(ngModel)]="filtroEstado" (ngModelChange)="aplicarFiltros()">
+              <mat-option value="todos">Todos</mat-option>
+              <mat-option value="activo">Activas</mat-option>
+              <mat-option value="inactivo">Inactivas</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <button mat-icon-button (click)="cargarRamplas()">
+            <mat-icon>refresh</mat-icon>
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Tabla de Ramplas -->
+    <div class="table-container">
+      <div *ngIf="cargando" class="loading-container">
+        <mat-spinner></mat-spinner>
+      </div>
+
+      <table mat-table [dataSource]="ramplasFiltradas" class="ramplas-table" *ngIf="!cargando">
+        
+        <!-- Columna ID -->
+        <ng-container matColumnDef="id">
+          <th mat-header-cell *matHeaderCellDef>ID</th>
+          <td mat-cell *matCellDef="let rampla">#{{ rampla.id }}</td>
+        </ng-container>
+
+        <!-- Columna Nombre -->
+        <ng-container matColumnDef="nombre">
+          <th mat-header-cell *matHeaderCellDef>Nombre</th>
+          <td mat-cell *matCellDef="let rampla">
+            <strong>{{ rampla.nombre }}</strong>
+          </td>
+        </ng-container>
+
+        <!-- Columna Tipo -->
+        <ng-container matColumnDef="tipo">
+          <th mat-header-cell *matHeaderCellDef>Tipo</th>
+          <td mat-cell *matCellDef="let rampla">
+            <mat-chip [color]="getTipoColor(rampla.tipo_rampla)">
+              <mat-icon>{{ rampla.tipo_rampla === 'frugon_cerrado' ? 'rv_hookup' : 'curtains' }}</mat-icon>
+              {{ getTipoLabel(rampla.tipo_rampla) }}
+            </mat-chip>
+          </td>
+        </ng-container>
+
+        <!-- Columna Estado -->
+        <ng-container matColumnDef="estado">
+          <th mat-header-cell *matHeaderCellDef>Estado Operativo</th>
+          <td mat-cell *matCellDef="let rampla">
+            <mat-chip [color]="getEstadoColor(rampla.estado)">
+              {{ rampla.estado }}
+            </mat-chip>
+          </td>
+        </ng-container>
+
+        <!-- Columna Activo -->
+        <ng-container matColumnDef="activo">
+          <th mat-header-cell *matHeaderCellDef>Disponible</th>
+          <td mat-cell *matCellDef="let rampla">
+            <mat-slide-toggle 
+              [checked]="rampla.activo"
+              (change)="cambiarEstadoActivo(rampla)"
+              [disabled]="cargando">
+              {{ rampla.activo ? 'Activa' : 'Inactiva' }}
+            </mat-slide-toggle>
+          </td>
+        </ng-container>
+
+        <!-- Columna Acciones -->
+        <ng-container matColumnDef="acciones">
+          <th mat-header-cell *matHeaderCellDef>Acciones</th>
+          <td mat-cell *matCellDef="let rampla">
+            <button mat-icon-button 
+                    (click)="abrirModalEditar(rampla)"
+                    color="primary">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button 
+                    (click)="eliminarRampla(rampla)"
+                    color="warn">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columnas"></tr>
+        <tr mat-row *matRowDef="let row; columns: columnas"></tr>
+      </table>
+
+      <div *ngIf="!cargando && ramplasFiltradas.length === 0" class="empty-state">
+        <mat-icon>inbox</mat-icon>
+        <h3>No se encontraron ramplas</h3>
+        <p>Intenta ajustar los filtros o crea una nueva rampla</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Crear/Editar Rampla -->
+<div class="modal-overlay" *ngIf="mostrarModal" (click)="cerrarModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <h2>{{ modoEdicion ? 'Editar Rampla' : 'Nueva Rampla' }}</h2>
+    
+    <form (ngSubmit)="guardarRampla()">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Nombre de la Rampla</mat-label>
+        <input matInput 
+               [(ngModel)]="formRampla.nombre"
+               name="nombre"
+               placeholder="Ej: Rampla 16"
+               required>
+        <mat-icon matPrefix>local_shipping</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Tipo de Rampla</mat-label>
+        <mat-select [(ngModel)]="formRampla.tipo_rampla" name="tipo" required>
+          <mat-option value="frugon_cerrado">
+            Frugón Cerrado
+          </mat-option>
+          <mat-option value="cortina">
+            Cortina
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <div class="toggle-field">
+        <mat-slide-toggle [(ngModel)]="formRampla.activo" name="activo">
+          Rampla disponible para asignación
+        </mat-slide-toggle>
+        <p class="hint">
+          {{ formRampla.activo ? 'CD podrá asignar esta rampla' : 'CD NO podrá asignar esta rampla' }}
+        </p>
+      </div>
+
+      <div class="modal-actions">
+        <button mat-button type="button" (click)="cerrarModal()">Cancelar</button>
+        <button mat-raised-button 
+                color="primary"
+                type="submit"
+                [disabled]="!formRampla.nombre.trim() || cargando">
+          <mat-icon>{{ modoEdicion ? 'save' : 'add' }}</mat-icon>
+          {{ modoEdicion ? 'Guardar Cambios' : 'Crear Rampla' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

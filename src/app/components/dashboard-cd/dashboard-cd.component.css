@@ -172,6 +172,138 @@
     color: #ccc;
 }
 
+/* Resumen por Estados de Ramplas */
+.estados-resumen-card {
+    margin: 24px 0;
+}
+
+.estados-resumen-card mat-card-header mat-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 20px;
+}
+
+.estados-grid-ramplas {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.estado-item-rampla {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 8px;
+    background-color: #fff;
+    border: 2px solid #e0e0e0;
+    transition: all 0.3s ease;
+}
+
+.estado-item-rampla.vacio {
+    background-color: #fafafa;
+    border-color: #f0f0f0;
+    opacity: 0.7;
+}
+
+.estado-item-rampla.destacado {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-color: #d0d0d0;
+}
+
+.estado-item-rampla:hover.destacado {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+    border-color: #bbb;
+}
+
+.estado-badge {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.estado-item-rampla.vacio .estado-badge {
+    opacity: 0.5;
+}
+
+.estado-badge mat-icon {
+    color: white;
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+}
+
+.estado-badge.badge-error {
+    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+}
+
+.estado-badge.badge-warning {
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+}
+
+.estado-badge.badge-success {
+    background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+}
+
+.estado-badge.badge-info {
+    background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+}
+
+.estado-badge.badge-primary {
+    background: linear-gradient(135deg, #673ab7 0%, #512da8 100%);
+}
+
+.estado-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+}
+
+.estado-nombre {
+    font-weight: 500;
+    color: #333;
+    font-size: 13px;
+    line-height: 1.2;
+}
+
+.estado-item-rampla.vacio .estado-nombre {
+    color: #999;
+}
+
+.estado-cantidad {
+    font-size: 24px;
+    font-weight: 700;
+    color: #2196f3;
+}
+
+.estado-item-rampla.vacio .estado-cantidad {
+    color: #ccc;
+}
+
+.estado-vacio {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px;
+    color: #999;
+}
+
+.estado-vacio mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 12px;
+    color: #ccc;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .filters {
@@ -190,4 +322,115 @@
     .tickets-table-container {
         font-size: 12px;
     }
+
+    .estados-grid-ramplas {
+        grid-template-columns: 1fr;
+    }
+
+    .tickets-list {
+        gap: 12px;
+    }
+}
+
+/* Estilos para Lista de Tickets */
+.tickets-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.ticket-list-item {
+    border-left: 4px solid #2196f3;
+    transition: all 0.3s ease;
+}
+
+.ticket-list-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateX(4px);
+}
+
+.ticket-list-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+}
+
+.ticket-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.ticket-id {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+}
+
+.ticket-id mat-icon {
+    color: #2196f3;
+}
+
+.ticket-list-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #666;
+}
+
+.detail-item mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    color: #999;
+}
+
+.ticket-list-actions {
+    display: flex;
+    gap: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #f0f0f0;
+}
+
+/* Chips de estado */
+.chip-error {
+    background-color: #ffebee;
+    color: #c62828;
+}
+
+.chip-warning {
+    background-color: #fff3e0;
+    color: #e65100;
+}
+
+.chip-success {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+.chip-info {
+    background-color: #e3f2fd;
+    color: #1565c0;
+}
+
+.chip-primary {
+    background-color: #f3e5f5;
+    color: #6a1b9a;
+}
+
+/* Color para stat-card planta */
+.stat-card.planta {
+    background: linear-gradient(135deg, #7e57c2 0%, #5e35b1 100%);
 }

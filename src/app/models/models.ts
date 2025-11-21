@@ -1,10 +1,15 @@
 // src/app/models/models.ts
 
+export type TipoRampla = 'frugon_cerrado' | 'cortina';
+
 export interface Rampla {
     id: number;
     nombre: string;
+    tipo_rampla: TipoRampla;
     estado: 'Libre' | 'En Servicio';
+    activo: boolean;
     ticket_actual_id: number | null;
+    created_at?: string;
 }
 
 export type EstadoTicket =
@@ -55,7 +60,7 @@ export interface RegistroTiempo {
 }
 
 export interface CreateTicketDTO {
-    cantidad_pallet: number;
+    cantidad_pallet?: number;
     muelle_planta: number;
 }
 

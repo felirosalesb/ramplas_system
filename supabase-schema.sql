@@ -20,30 +20,33 @@ CREATE INDEX idx_usuarios_rol ON public.usuarios(rol);
 CREATE TABLE IF NOT EXISTS public.ramplas (
     id SERIAL PRIMARY KEY,
     nombre TEXT NOT NULL UNIQUE,
+    tipo_rampla TEXT NOT NULL DEFAULT 'cortina' CHECK (tipo_rampla IN ('frugon_cerrado', 'cortina')),
     estado TEXT NOT NULL DEFAULT 'Libre' CHECK (estado IN ('Libre', 'En Servicio')),
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
     ticket_actual_id INTEGER NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
--- Índice para búsquedas por estado
+-- Índices para búsquedas
 CREATE INDEX idx_ramplas_estado ON public.ramplas(estado);
--- Insertar 15 ramplas iniciales
-INSERT INTO public.ramplas (nombre)
-VALUES ('Rampla 01'),
-    ('Rampla 02'),
-    ('Rampla 03'),
-    ('Rampla 04'),
-    ('Rampla 05'),
-    ('Rampla 06'),
-    ('Rampla 07'),
-    ('Rampla 08'),
-    ('Rampla 09'),
-    ('Rampla 10'),
-    ('Rampla 11'),
-    ('Rampla 12'),
-    ('Rampla 13'),
-    ('Rampla 14'),
-    ('Rampla 15') ON CONFLICT (nombre) DO NOTHING;
+CREATE INDEX idx_ramplas_activo ON public.ramplas(activo);
+-- Insertar 15 ramplas iniciales con tipo
+INSERT INTO public.ramplas (nombre, tipo_rampla)
+VALUES ('Rampla 01', 'frugon_cerrado'),
+    ('Rampla 02', 'cortina'),
+    ('Rampla 03', 'frugon_cerrado'),
+    ('Rampla 04', 'cortina'),
+    ('Rampla 05', 'frugon_cerrado'),
+    ('Rampla 06', 'cortina'),
+    ('Rampla 07', 'cortina'),
+    ('Rampla 08', 'frugon_cerrado'),
+    ('Rampla 09', 'cortina'),
+    ('Rampla 10', 'frugon_cerrado'),
+    ('Rampla 11', 'cortina'),
+    ('Rampla 12', 'cortina'),
+    ('Rampla 13', 'frugon_cerrado'),
+    ('Rampla 14', 'cortina'),
+    ('Rampla 15', 'frugon_cerrado') ON CONFLICT (nombre) DO NOTHING;
 -- ============================================
 -- TABLA: tickets
 -- ============================================
