@@ -79,24 +79,47 @@ export class SupabaseService {
 
     async crearTicketPlanta(dto: CreateTicketDTO): Promise<Ticket> {
         const user = this.getCurrentUser();
-        if (!user) throw new Error('Usuario no autenticado');
+        if (!user) {
+            console.error('Usuario no autenticado');
+            throw new Error('Usuario no autenticado');
+        }
+
+        console.log('=== CREAR TICKET PLANTA ===');
+        console.log('Usuario:', user.id);
+        console.log('DTO recibido:', dto);
+
+        const ticketData = {
+            planta_user_id: user.id,
+            cantidad_pallet: dto.cantidad_pallet || 1,
+            muelle_planta: dto.muelle_planta,
+            estado_actual: 'Pendiente Asignación',
+            fecha_alerta_cd: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+        };
+
+        console.log('Datos a insertar:', ticketData);
 
         const { data, error } = await this.supabase
             .from('tickets')
-            .insert({
-                planta_user_id: user.id,
-                cantidad_pallet: dto.cantidad_pallet,
-                muelle_planta: dto.muelle_planta,
-                estado_actual: 'Pendiente Asignación',
-                fecha_alerta_cd: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
-            })
+            .insert(ticketData)
             .select()
             .single();
 
-        if (error) throw error;
+        console.log('Resultado insert:', { data, error });
 
+        if (error) {
+            console.error('Error al insertar ticket:', error);
+            throw error;
+        }
+
+        if (!data) {
+            console.error('No se recibió data del insert');
+            throw new Error('No se pudo crear el ticket');
+        }
+
+        console.log('Ticket creado, registrando tiempos...');
         await this.registrarTiempo(data.id, 'Solicitud Creada', user.id);
         await this.registrarTiempo(data.id, 'Pendiente Asignación', user.id);
+        console.log('Tiempos registrados correctamente');
 
         return data;
     }
@@ -196,6 +219,62 @@ export class SupabaseService {
         if (error) throw error;
 
         await this.registrarTiempo(dto.ticket_id, nuevoEstado, user.id);
+    }
+
+    async eliminarTicket(ticketId: number): Promise<void> {
+        const user = this.getCurrentUser();
+        if (!user) throw new Error('Usuario no autenticado');
+
+        console.log('=== ELIMINAR TICKET ===');
+        console.log('Ticket ID:', ticketId);
+        console.log('Usuario:', user.id);
+
+        // Verificar que el ticket pertenece al usuario y está en estado Pendiente Asignación
+        const { data: ticket, error: fetchError } = await this.supabase
+            .from('tickets')
+            .select('planta_user_id, estado_actual')
+            .eq('id', ticketId)
+            .single();
+
+        console.log('Ticket encontrado:', ticket);
+        console.log('Error al buscar:', fetchError);
+
+        if (fetchError) {
+            console.error('Error al buscar ticket:', fetchError);
+            throw new Error('No se pudo encontrar el ticket');
+        }
+        if (ticket.planta_user_id !== user.id) {
+            throw new Error('No tiene permisos para eliminar este ticket');
+        }
+        if (ticket.estado_actual !== 'Pendiente Asignación') {
+            throw new Error('Solo se pueden eliminar tickets en estado Pendiente Asignación');
+        }
+
+        // Eliminar registros de tiempos asociados
+        console.log('Eliminando tiempos asociados...');
+        const { error: tiemposError } = await this.supabase
+            .from('registros_tiempo')
+            .delete()
+            .eq('ticket_id', ticketId);
+
+        if (tiemposError) {
+            console.error('Error al eliminar tiempos:', tiemposError);
+            throw new Error('Error al eliminar registros de tiempos');
+        }
+
+        // Eliminar el ticket
+        console.log('Eliminando ticket...');
+        const { error: deleteError } = await this.supabase
+            .from('tickets')
+            .delete()
+            .eq('id', ticketId);
+
+        if (deleteError) {
+            console.error('Error al eliminar ticket:', deleteError);
+            throw new Error(deleteError.message || 'Error al eliminar el ticket');
+        }
+
+        console.log('Ticket eliminado correctamente');
     }
 
     async cambiarEstadoTicket(ticketId: number, nuevoEstado: EstadoTicket): Promise<void> {

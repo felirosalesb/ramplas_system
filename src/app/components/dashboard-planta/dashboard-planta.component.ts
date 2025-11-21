@@ -13,6 +13,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { SupabaseService } from '../../services/supabase.service';
 import { NotificationService } from '../../services/notification.service';
 import { Ticket, CreateTicketDTO, ConfirmarLlegadaDTO } from '../../models/models';
@@ -35,6 +36,7 @@ import { DetalleTicketComponent } from '../detalle-ticket/detalle-ticket.compone
     MatChipsModule,
     MatRadioModule,
     MatDialogModule,
+    MatTooltipModule,
     NavbarComponent
   ],
   templateUrl: './dashboard-planta.component.html',
@@ -62,7 +64,6 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
     private dialog: MatDialog
   ) {
     this.formularioSolicitud = this.fb.group({
-      cantidad_pallet: ['', [Validators.required, Validators.min(1), Validators.max(999)]],
       muelle_planta: ['', [Validators.required, Validators.min(1)]]
     });
   }
@@ -138,9 +139,23 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
   }
 
   async crearSolicitud(): Promise<void> {
+    console.log('=== CREAR SOLICITUD ===');
+    console.log('Formulario válido:', this.formularioSolicitud.valid);
+    console.log('Valores del formulario:', this.formularioSolicitud.value);
+    console.log('Estado de controles:', {
+      muelle_planta: this.formularioSolicitud.get('muelle_planta')?.value
+    });
+
     if (this.formularioSolicitud.invalid) {
+      console.log('Formulario inválido');
       Object.keys(this.formularioSolicitud.controls).forEach(key => {
-        this.formularioSolicitud.get(key)?.markAsTouched();
+        const control = this.formularioSolicitud.get(key);
+        console.log(`Control ${key}:`, {
+          value: control?.value,
+          valid: control?.valid,
+          errors: control?.errors
+        });
+        control?.markAsTouched();
       });
       return;
     }
@@ -148,7 +163,10 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
     this.cargando = true;
     try {
       const dto: CreateTicketDTO = this.formularioSolicitud.value;
+      console.log('DTO a enviar:', dto);
+
       const nuevoTicket = await this.supabaseService.crearTicketPlanta(dto);
+      console.log('Ticket creado:', nuevoTicket);
 
       this.notificationService.agregarNotificacion(
         `Solicitud #${nuevoTicket.id} creada exitosamente`,
@@ -159,13 +177,18 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
       this.formularioSolicitud.reset();
       this.mostrarFormulario = false;
       await this.cargarMisTickets();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al crear solicitud:', error);
+      console.error('Mensaje de error:', error?.message);
+      console.error('Error completo:', JSON.stringify(error, null, 2));
+
+      const mensaje = error?.message || 'Error al crear la solicitud';
       this.notificationService.agregarNotificacion(
-        'Error al crear la solicitud',
+        mensaje,
         0,
         'error'
       );
+      alert(`Error al crear solicitud: ${mensaje}`);
     } finally {
       this.cargando = false;
     }
@@ -269,6 +292,50 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
     return ticket.estado_actual === 'Inicio de Carga';
   }
 
+  puedeEliminarTicket(ticket: Ticket): boolean {
+    // Solo se puede eliminar si está en Pendiente Asignación
+    return ticket.estado_actual === 'Pendiente Asignación';
+  }
+
+  confirmarEliminarTicket(ticket: Ticket): void {
+    const confirmacion = confirm(
+      `¿Está seguro que desea eliminar la solicitud #${ticket.id}?\n\nEsta acción no se puede deshacer.`
+    );
+
+    if (confirmacion) {
+      this.eliminarTicket(ticket);
+    }
+  }
+
+  async eliminarTicket(ticket: Ticket): Promise<void> {
+    this.cargando = true;
+    try {
+      console.log('Eliminando ticket:', ticket.id);
+      await this.supabaseService.eliminarTicket(ticket.id);
+      console.log('Ticket eliminado exitosamente');
+
+      this.notificationService.agregarNotificacion(
+        `Solicitud #${ticket.id} eliminada correctamente`,
+        ticket.id,
+        'success'
+      );
+
+      // Recargar tickets
+      await this.cargarMisTickets();
+    } catch (error: any) {
+      console.error('Error al eliminar ticket:', error);
+      const mensaje = error?.message || 'Error al eliminar la solicitud';
+      this.notificationService.agregarNotificacion(
+        mensaje,
+        ticket.id,
+        'error'
+      );
+      alert(`Error: ${mensaje}`);
+    } finally {
+      this.cargando = false;
+    }
+  }
+
   esTicketActivo(ticket: Ticket): boolean {
     const estadosFinales = ['Libre', 'Rechazada'];
     return !estadosFinales.includes(ticket.estado_actual);
@@ -303,11 +370,6 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
   }
 
   // Validaciones del formulario
-  get cantidadPalletInvalid(): boolean {
-    const control = this.formularioSolicitud.get('cantidad_pallet');
-    return !!(control && control.invalid && control.touched);
-  }
-
   get muellePlantaInvalid(): boolean {
     const control = this.formularioSolicitud.get('muelle_planta');
     return !!(control && control.invalid && control.touched);

@@ -21,6 +21,18 @@
         </mat-card-content>
       </mat-card>
 
+      <mat-card class="stat-card planta">
+        <mat-card-content>
+          <div class="stat-icon">
+            <mat-icon>factory</mat-icon>
+          </div>
+          <div class="stat-info">
+            <h2>{{ ticketsEnPlanta.length }}</h2>
+            <p>Ramplas en Planta</p>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
       <mat-card class="stat-card transito">
         <mat-card-content>
           <div class="stat-icon">
@@ -28,7 +40,7 @@
           </div>
           <div class="stat-info">
             <h2>{{ ticketsEnTransito.length }}</h2>
-            <p>En Tránsito</p>
+            <p>En Tránsito a CD</p>
           </div>
         </mat-card-content>
       </mat-card>
@@ -51,27 +63,23 @@
       <mat-card-header>
         <mat-card-title>
           <mat-icon>analytics</mat-icon>
-          Resumen por Estados
+          Resumen de Estados del Flujo
         </mat-card-title>
-        <mat-card-subtitle>Distribución actual de tickets en cada estado</mat-card-subtitle>
+        <mat-card-subtitle>Cantidad de ramplas en cada etapa del proceso</mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
-        <div class="estados-grid">
-          <div *ngFor="let item of getEstadosConContadores()" 
-               class="estado-item"
-               [class.destacado]="item.cantidad > 0">
-            <div class="estado-badge" [class]="'badge-' + getEstadoClass(item.estado)">
-              <mat-icon>{{ getIconoEstado(item.estado) }}</mat-icon>
+        <div class="estados-grid-ramplas">
+          <div *ngFor="let item of getEstadosRamplasConContadores()" 
+               class="estado-item-rampla"
+               [class.destacado]="item.cantidad > 0"
+               [class.vacio]="item.cantidad === 0">
+            <div class="estado-badge" [class]="'badge-' + getEstadoRamplaClass(item.estado)">
+              <mat-icon>{{ getIconoEstadoRampla(item.estado) }}</mat-icon>
             </div>
             <div class="estado-info">
               <span class="estado-nombre">{{ item.estado }}</span>
-              <span class="estado-cantidad">{{ item.cantidad }} ticket{{ item.cantidad !== 1 ? 's' : '' }}</span>
+              <span class="estado-cantidad">{{ item.cantidad }}</span>
             </div>
-          </div>
-          
-          <div *ngIf="getEstadosConContadores().length === 0" class="estado-vacio">
-            <mat-icon>info</mat-icon>
-            <p>No hay tickets activos en este momento</p>
           </div>
         </div>
       </mat-card-content>
@@ -159,11 +167,77 @@
         </div>
       </mat-tab>
 
+      <!-- Tab: Ramplas en Planta -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">factory</mat-icon>
+          Ramplas en Planta
+          <span class="badge" *ngIf="ticketsEnPlanta.length > 0">
+            {{ ticketsEnPlanta.length }}
+          </span>
+        </ng-template>
+
+        <div class="tab-content">
+          <div *ngIf="cargando" class="loading-container">
+            <mat-spinner></mat-spinner>
+          </div>
+
+          <div *ngIf="!cargando && ticketsEnPlanta.length === 0" class="empty-state">
+            <mat-icon>check_circle_outline</mat-icon>
+            <h3>No hay ramplas en planta</h3>
+            <p>No hay ramplas actualmente siendo cargadas en planta</p>
+          </div>
+
+          <!-- Lista de Tickets en Planta -->
+          <div class="tickets-list" *ngIf="!cargando && ticketsEnPlanta.length > 0">
+            <mat-card *ngFor="let ticket of ticketsEnPlanta" class="ticket-list-item">
+              <div class="ticket-list-content">
+                <div class="ticket-list-header">
+                  <div class="ticket-id">
+                    <mat-icon>local_shipping</mat-icon>
+                    <strong>Ticket #{{ ticket.id }}</strong>
+                  </div>
+                  <mat-chip [class]="'chip-' + getEstadoClass(ticket.estado_actual)">
+                    {{ ticket.estado_actual }}
+                  </mat-chip>
+                </div>
+
+                <div class="ticket-list-details">
+                  <div class="detail-item">
+                    <mat-icon>confirmation_number</mat-icon>
+                    <span><strong>Rampla:</strong> {{ ticket.rampla_asignada?.nombre || 'N/A' }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <mat-icon>inventory_2</mat-icon>
+                    <span><strong>Pallets:</strong> {{ ticket.cantidad_pallet }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <mat-icon>factory</mat-icon>
+                    <span><strong>Muelle Planta:</strong> {{ ticket.muelle_planta }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <mat-icon>schedule</mat-icon>
+                    <span><strong>Creado:</strong> {{ ticket.fecha_creacion | date:'dd/MM/yy HH:mm' }}</span>
+                  </div>
+                </div>
+
+                <div class="ticket-list-actions">
+                  <button mat-button (click)="verDetalleTicket(ticket)">
+                    <mat-icon>info</mat-icon>
+                    Ver Detalle
+                  </button>
+                </div>
+              </div>
+            </mat-card>
+          </div>
+        </div>
+      </mat-tab>
+
       <!-- Tab: En Tránsito a Bodega -->
       <mat-tab>
         <ng-template mat-tab-label>
           <mat-icon class="tab-icon">local_shipping</mat-icon>
-          En Tránsito
+          En Tránsito a CD
           <span class="badge" *ngIf="ticketsEnTransito.length > 0">
             {{ ticketsEnTransito.length }}
           </span>

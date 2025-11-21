@@ -68,12 +68,86 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     private notificationService: NotificationService
   ) { }
 
+  private intervalMonitoreo: any;
+  private realtimeChannel: any;
+
   async ngOnInit(): Promise<void> {
     await this.cargarRamplas();
+    this.iniciarMonitoreoAlertas();
+    this.iniciarRealtimeSubscriptions();
   }
 
   ngOnDestroy(): void {
-    // Cleanup si es necesario
+    if (this.intervalMonitoreo) {
+      clearInterval(this.intervalMonitoreo);
+    }
+    if (this.realtimeChannel) {
+      this.realtimeChannel.unsubscribe();
+    }
+  }
+
+  private iniciarRealtimeSubscriptions(): void {
+    this.realtimeChannel = this.supabaseService['supabase']
+      .channel('admin-ramplas-changes')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'tickets' },
+        () => {
+          // Recargar datos cuando hay cambios
+          this.cargarRamplas();
+        }
+      )
+      .subscribe();
+  }
+
+  private iniciarMonitoreoAlertas(): void {
+    // Revisión cada 5 minutos
+    this.intervalMonitoreo = setInterval(() => {
+      this.revisarAlertasRamplasAsignadas();
+    }, 5 * 60 * 1000);
+
+    // Revisión inicial
+    this.revisarAlertasRamplasAsignadas();
+  }
+
+  private async revisarAlertasRamplasAsignadas(): Promise<void> {
+    try {
+      const ahora = new Date();
+      const limiteTiempo = 15 * 60 * 1000; // 15 minutos en milisegundos
+
+      // Obtener todos los tickets en estado 'Rampla Asignada'
+      const { data: tickets } = await this.supabaseService['supabase']
+        .from('tickets')
+        .select('id, estado_actual')
+        .eq('estado_actual', 'Rampla Asignada');
+
+      if (!tickets || tickets.length === 0) return;
+
+      for (const ticket of tickets) {
+        // Obtener el tiempo cuando se asignó la rampla
+        const { data: tiempos } = await this.supabaseService['supabase']
+          .from('registros_tiempo')
+          .select('fecha_hora')
+          .eq('ticket_id', ticket.id)
+          .eq('estado', 'Rampla Asignada')
+          .order('fecha_hora', { ascending: false })
+          .limit(1);
+
+        if (tiempos && tiempos.length > 0) {
+          const fechaAsignacion = new Date(tiempos[0].fecha_hora);
+          const tiempoTranscurrido = ahora.getTime() - fechaAsignacion.getTime();
+
+          if (tiempoTranscurrido > limiteTiempo) {
+            this.notificationService.agregarNotificacion(
+              `⚠️ Rampla asignada hace más de 15 minutos - Ticket #${ticket.id}`,
+              ticket.id,
+              'warning'
+            );
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error al revisar alertas de ramplas asignadas:', error);
+    }
   }
 
   async cargarRamplas(): Promise<void> {

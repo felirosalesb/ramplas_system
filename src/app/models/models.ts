@@ -60,7 +60,7 @@ export interface RegistroTiempo {
 }
 
 export interface CreateTicketDTO {
-    cantidad_pallet: number;
+    cantidad_pallet?: number;
     muelle_planta: number;
 }
 

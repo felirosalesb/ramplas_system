@@ -18,19 +18,6 @@
       <form [formGroup]="formularioSolicitud" (ngSubmit)="crearSolicitud()">
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Cantidad de Pallets</mat-label>
-            <input 
-              matInput 
-              type="number" 
-              formControlName="cantidad_pallet"
-              placeholder="Ej: 24"
-            >
-            <mat-error *ngIf="cantidadPalletInvalid">
-              {{ getErrorMessage('cantidad_pallet') }}
-            </mat-error>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
             <mat-label>Muelle en Planta</mat-label>
             <input 
               matInput 
@@ -146,6 +133,18 @@
           >
             <mat-icon>info</mat-icon>
             Ver Detalle
+          </button>
+
+          <!-- Eliminar ticket -->
+          <button 
+            mat-icon-button
+            color="warn"
+            *ngIf="puedeEliminarTicket(ticket)"
+            (click)="confirmarEliminarTicket(ticket)"
+            [disabled]="cargando"
+            matTooltip="Eliminar solicitud"
+          >
+            <mat-icon>close</mat-icon>
           </button>
         </mat-card-actions>
       </mat-card>
