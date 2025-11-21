@@ -28,7 +28,7 @@
           </div>
           <div class="stat-info">
             <h2>{{ ticketsEnPlanta.length }}</h2>
-            <p>Ramplas en Planta</p>
+            <p>Asignado</p>
           </div>
         </mat-card-content>
       </mat-card>
@@ -139,11 +139,9 @@
                     <span>Muelle Planta: {{ ticket.muelle_planta }}</span>
                   </div>
                   <div class="info-row" *ngIf="ticket.fecha_alerta_cd">
-                    <mat-icon [color]="estaProximoVencer(ticket.fecha_alerta_cd) ? 'warn' : ''">
-                      timer
-                    </mat-icon>
+
                     <span [class.text-warn]="estaProximoVencer(ticket.fecha_alerta_cd)">
-                      Tiempo restante: {{ getTiempoRestante(ticket.fecha_alerta_cd) }}
+                     
                     </span>
                   </div>
                 </div>
@@ -167,11 +165,11 @@
         </div>
       </mat-tab>
 
-      <!-- Tab: Ramplas en Planta -->
+      <!-- Tab: Asignado -->
       <mat-tab>
         <ng-template mat-tab-label>
           <mat-icon class="tab-icon">factory</mat-icon>
-          Ramplas en Planta
+          Asignado
           <span class="badge" *ngIf="ticketsEnPlanta.length > 0">
             {{ ticketsEnPlanta.length }}
           </span>
@@ -184,7 +182,7 @@
 
           <div *ngIf="!cargando && ticketsEnPlanta.length === 0" class="empty-state">
             <mat-icon>check_circle_outline</mat-icon>
-            <h3>No hay ramplas en planta</h3>
+            <h3>No hay ramplas asignadas</h3>
             <p>No hay ramplas actualmente siendo cargadas en planta</p>
           </div>
 

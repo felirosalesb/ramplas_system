@@ -125,12 +125,12 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
 
       // Pestaña 2: Ramplas en Planta (desde "Rampla Asignada" hasta "Fin de Carga")
       this.ticketsEnPlanta = todosTickets
-        .filter(t => ['Rampla Asignada', 'Rampla en Planta', 'Inicio de Carga', 'Fin de Carga'].includes(t.estado_actual))
+        .filter(t => ['Rampla Asignada', 'Rampla en Planta', 'Carga iniciada', 'Fin de Carga'].includes(t.estado_actual))
         .sort((a, b) => new Date(a.fecha_creacion).getTime() - new Date(b.fecha_creacion).getTime());
 
-      // Pestaña 3: En Tránsito (desde "Cargado - Espera Chofer" hasta "Inicio Descarga")
+      // Pestaña 3: En Tránsito (desde "Rampla cargada" hasta "Inicio Descarga")
       this.ticketsEnTransito = todosTickets
-        .filter(t => ['Cargado - Espera Chofer', 'Asignada a Muelle CD', 'Inicio Descarga'].includes(t.estado_actual))
+        .filter(t => ['Rampla cargada', 'Asignada a Muelle CD', 'Inicio Descarga'].includes(t.estado_actual))
         .sort((a, b) => new Date(a.fecha_creacion).getTime() - new Date(b.fecha_creacion).getTime());
 
       this.ticketsActivos = todosTickets;
@@ -402,9 +402,9 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
       'Pendiente Asignación': 'warn',
       'Rampla Asignada': 'primary',
       'Rampla en Planta': 'primary',
-      'Inicio de Carga': 'primary',
+      'Carga iniciada': 'primary',
       'Fin de Carga': 'primary',
-      'Cargado - Espera Chofer': 'accent',
+      'Rampla cargada': 'accent',
       'Asignada a Muelle CD': 'accent',
       'Inicio Descarga': 'accent',
       'Fin Descarga': 'accent',
@@ -499,7 +499,7 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
   }
 
   puedeAsignarMuelle(ticket: Ticket): boolean {
-    return ticket.estado_actual === 'Cargado - Espera Chofer';
+    return ticket.estado_actual === 'Rampla cargada';
   }
 
   puedeIniciarDescarga(ticket: Ticket): boolean {
@@ -527,9 +527,9 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
     this.contadoresEstadoRamplas = {
       'Rampla Asignada': 0,
       'Rampla en Planta': 0,
-      'Inicio de Carga': 0,
+      'Carga iniciada': 0,
       'Fin de Carga': 0,
-      'Cargado - Espera Chofer': 0,
+      'Rampla cargada': 0,
       'Asignada a Muelle CD': 0,
       'Inicio Descarga': 0,
       'Fin Descarga': 0,
@@ -551,9 +551,9 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
     const ordenEstados = [
       'Rampla Asignada',
       'Rampla en Planta',
-      'Inicio de Carga',
+      'Carga iniciada',
       'Fin de Carga',
-      'Cargado - Espera Chofer',
+      'Rampla cargada',
       'Asignada a Muelle CD',
       'Inicio Descarga',
       'Fin Descarga',
@@ -573,9 +573,9 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
       'Pendiente Asignación': 'pending',
       'Rampla Asignada': 'local_shipping',
       'Rampla en Planta': 'factory',
-      'Inicio de Carga': 'play_circle',
+      'Carga iniciada': 'play_circle',
       'Fin de Carga': 'check_circle',
-      'Cargado - Espera Chofer': 'hourglass_empty',
+      'Rampla cargada': 'hourglass_empty',
       'Asignada a Muelle CD': 'warehouse',
       'Inicio Descarga': 'unarchive',
       'Fin Descarga': 'done_all',
@@ -587,7 +587,7 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
 
   getEstadoRamplaClass(estado: string): string {
     if (estado.includes('Rechazada')) return 'error';
-    if (estado.includes('Pendiente') || estado.includes('Espera')) return 'warning';
+    if (estado.includes('Pendiente') || estado.includes('Espera') || estado === 'Rampla cargada') return 'warning';
     if (estado.includes('Libre') || estado.includes('Fin')) return 'success';
     if (estado.includes('Inicio') || estado.includes('Cargado')) return 'info';
     return 'primary';
@@ -595,7 +595,7 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
 
   getEstadoClass(estado: string): string {
     if (estado.includes('Rechazada')) return 'error';
-    if (estado.includes('Pendiente') || estado.includes('Espera')) return 'warning';
+    if (estado.includes('Pendiente') || estado.includes('Espera') || estado === 'Rampla cargada') return 'warning';
     if (estado.includes('Libre') || estado.includes('Fin')) return 'success';
     if (estado.includes('Inicio') || estado.includes('Cargado')) return 'info';
     return 'primary';

@@ -107,7 +107,7 @@
             mat-raised-button 
             color="primary"
             *ngIf="puedeIniciarCarga(ticket)"
-            (click)="cambiarEstado(ticket, 'Inicio de Carga')"
+            (click)="cambiarEstado(ticket, 'Carga iniciada')"
             [disabled]="cargando"
           >
             <mat-icon>play_arrow</mat-icon>

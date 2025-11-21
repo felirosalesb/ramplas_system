@@ -421,11 +421,11 @@ export class SupabaseService {
         // Primero registrar "Fin de Carga"
         await this.registrarTiempo(ticketId, 'Fin de Carga', user.id);
 
-        // Luego cambiar automáticamente a "Cargado - Espera Chofer"
+        // Luego cambiar automáticamente a "Rampla cargada"
         const { error } = await this.supabase
             .from('tickets')
             .update({
-                estado_actual: 'Cargado - Espera Chofer',
+                estado_actual: 'Rampla cargada',
                 fecha_alerta_cd: new Date().toISOString() // Marcar cuándo llegó a bodega
             })
             .eq('id', ticketId);
@@ -435,7 +435,7 @@ export class SupabaseService {
             throw error;
         }
 
-        await this.registrarTiempo(ticketId, 'Cargado - Espera Chofer', user.id);
+        await this.registrarTiempo(ticketId, 'Rampla cargada', user.id);
 
         // Crear notificación para todos los usuarios CD
         const { data: usuariosCD } = await this.supabase

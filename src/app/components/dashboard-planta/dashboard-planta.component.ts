@@ -254,7 +254,7 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
   async cambiarEstado(ticket: Ticket, nuevoEstado: any): Promise<void> {
     this.cargando = true;
     try {
-      // Si es Fin de Carga, usar método específico que pasa automáticamente a "Cargado - Espera Chofer"
+      // Si es Fin de Carga, usar método específico que pasa automáticamente a "Rampla cargada"
       if (nuevoEstado === 'Fin de Carga') {
         await this.supabaseService.finalizarCarga(ticket.id);
         this.notificationService.agregarNotificacion(
@@ -289,7 +289,7 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
   }
 
   puedeFinalizarCarga(ticket: Ticket): boolean {
-    return ticket.estado_actual === 'Inicio de Carga';
+    return ticket.estado_actual === 'Carga iniciada';
   }
 
   puedeEliminarTicket(ticket: Ticket): boolean {
@@ -346,9 +346,9 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
       'Pendiente Asignación': 'warn',
       'Rampla Asignada': 'accent',
       'Rampla en Planta': 'primary',
-      'Inicio de Carga': 'primary',
+      'Carga iniciada': 'primary',
       'Fin de Carga': 'primary',
-      'Cargado - Espera Chofer': 'accent',
+      'Rampla cargada': 'accent',
       'Rechazada': 'warn'
     };
     return colores[estado] || 'primary';
