@@ -32,6 +32,7 @@ export interface Ticket {
     cd_user_id: string | null;
     cantidad_pallet: number;
     muelle_planta: number;
+    nombre_planta: string | null;
     fecha_creacion: string;
     estado_actual: EstadoTicket;
     rampla_asignada_id: number | null;
@@ -48,6 +49,7 @@ export interface Usuario {
     email: string;
     rol: 'planta' | 'cd' | 'admin';
     nombre: string;
+    nombre_planta: string | null;
     created_at?: string;
 }
 

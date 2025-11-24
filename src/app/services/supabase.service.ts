@@ -88,10 +88,25 @@ export class SupabaseService {
         console.log('Usuario:', user.id);
         console.log('DTO recibido:', dto);
 
+        // Obtener nombre_planta del usuario actual
+        const { data: userData, error: userError } = await this.supabase
+            .from('usuarios')
+            .select('nombre_planta')
+            .eq('id', user.id)
+            .single();
+
+        if (userError) {
+            console.error('Error al obtener datos del usuario:', userError);
+            throw new Error('No se pudo obtener información del usuario');
+        }
+
+        console.log('Datos del usuario:', userData);
+
         const ticketData = {
             planta_user_id: user.id,
             cantidad_pallet: dto.cantidad_pallet || 1,
             muelle_planta: dto.muelle_planta,
+            nombre_planta: userData?.nombre_planta || null,
             estado_actual: 'Pendiente Asignación',
             fecha_alerta_cd: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
         };
@@ -203,7 +218,8 @@ export class SupabaseService {
             updates.estado_actual = 'Pendiente Asignación';
             updates.fecha_alerta_cd = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
         } else {
-            nuevoEstado = 'Rampla en Planta';
+            // Cambio: Confirmar llegada ahora pasa directo a "Carga iniciada"
+            nuevoEstado = 'Carga iniciada';
             updates.estado_actual = nuevoEstado;
 
             if (dto.accion === 'aceptar_observacion' && dto.observacion) {
@@ -218,6 +234,8 @@ export class SupabaseService {
 
         if (error) throw error;
 
+        // Registrar ambos estados para mantener historial
+        await this.registrarTiempo(dto.ticket_id, 'Rampla en Planta', user.id);
         await this.registrarTiempo(dto.ticket_id, nuevoEstado, user.id);
     }
 
@@ -313,33 +331,57 @@ export class SupabaseService {
             throw new Error('Usuario no autenticado');
         }
 
-        console.log('=== SERVICE: Asignando muelle CD ===');
+        console.log('=== SERVICE: Asignando muelle CD (directo a Fin Descarga) ===');
         console.log('Ticket ID:', ticketId);
         console.log('Muelle:', muelle);
         console.log('Usuario:', user.id);
 
+        // Obtener el ticket para liberar la rampla
+        const { data: ticket } = await this.supabase
+            .from('tickets')
+            .select('rampla_asignada_id')
+            .eq('id', ticketId)
+            .single();
+
+        // Cambio: Ahora pasa directo a "Libre" después de asignar muelle
         const { data, error } = await this.supabase
             .from('tickets')
             .update({
                 muelle_cd_asignado: muelle,
-                estado_actual: 'Asignada a Muelle CD'
+                estado_actual: 'Libre'
             })
             .eq('id', ticketId)
             .select();
 
         if (error) {
             console.error('❌ Error en UPDATE de tickets:', error);
-            console.error('Código:', error.code);
-            console.error('Mensaje:', error.message);
-            console.error('Detalles:', error.details);
             throw error;
         }
 
         console.log('✅ Ticket actualizado:', data);
 
+        // Liberar la rampla
+        if (ticket?.rampla_asignada_id) {
+            const { error: ramplaError } = await this.supabase
+                .from('ramplas')
+                .update({
+                    estado: 'Libre',
+                    ticket_actual_id: null
+                })
+                .eq('id', ticket.rampla_asignada_id);
+
+            if (ramplaError) {
+                console.error('Error al liberar rampla:', ramplaError);
+            }
+        }
+
+        // Registrar todos los estados intermedios para historial
         await this.registrarTiempo(ticketId, 'Asignada a Muelle CD', user.id);
-        console.log('✅ Tiempo registrado');
-        console.log('=== SERVICE: Muelle CD asignado correctamente ===');
+        await this.registrarTiempo(ticketId, 'Inicio Descarga', user.id);
+        await this.registrarTiempo(ticketId, 'Fin Descarga', user.id);
+        await this.registrarTiempo(ticketId, 'Libre', user.id);
+        console.log('✅ Muelle asignado y rampla liberada correctamente');
+        console.log('=== SERVICE: Proceso completado ===');
     }
 
     async iniciarDescarga(ticketId: number): Promise<void> {

@@ -26,6 +26,10 @@
           <strong>Muelle Planta:</strong>
           <span>{{ ticket.muelle_planta }}</span>
         </div>
+        <div class="info-item" *ngIf="ticket.nombre_planta">
+          <strong>Planta:</strong>
+          <span>{{ ticket.nombre_planta }}</span>
+        </div>
         <div class="info-item" *ngIf="ticket.rampla_asignada">
           <strong>Rampla:</strong>
           <span>{{ ticket.rampla_asignada.nombre }}</span>

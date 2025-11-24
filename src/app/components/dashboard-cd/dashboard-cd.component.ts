@@ -226,13 +226,13 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
   private async revisarAlertasRamplasAsignadas(): Promise<void> {
     try {
       const ahora = new Date();
-      const limiteTiempo = 15 * 60 * 1000; // 15 minutos en milisegundos
+      const limiteTiempo15min = 15 * 60 * 1000; // 15 minutos en milisegundos
+      const limiteTiempo30min = 30 * 60 * 1000; // 30 minutos en milisegundos
 
-      // Buscar en tickets en planta que están en estado 'Rampla Asignada'
+      // Alerta 1: Ramplas asignadas hace más de 15 minutos
       for (const ticket of this.ticketsEnPlanta) {
         if (ticket.estado_actual !== 'Rampla Asignada') continue;
 
-        // Obtener el tiempo cuando se asignó la rampla
         const { data: tiempos } = await this.supabaseService['supabase']
           .from('registros_tiempo')
           .select('fecha_hora')
@@ -245,11 +245,37 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
           const fechaAsignacion = new Date(tiempos[0].fecha_hora);
           const tiempoTranscurrido = ahora.getTime() - fechaAsignacion.getTime();
 
-          if (tiempoTranscurrido > limiteTiempo) {
+          if (tiempoTranscurrido > limiteTiempo15min) {
             this.notificationService.agregarNotificacion(
               `⚠️ Rampla asignada hace más de 15 minutos - Ticket #${ticket.id}`,
               ticket.id,
               'warning'
+            );
+          }
+        }
+      }
+
+      // Alerta 2: Ramplas cargadas hace más de 30 minutos (Cargado - Espera Chofer)
+      for (const ticket of this.ticketsEnTransito) {
+        if (ticket.estado_actual !== 'Cargado - Espera Chofer') continue;
+
+        const { data: tiempos } = await this.supabaseService['supabase']
+          .from('registros_tiempo')
+          .select('fecha_hora')
+          .eq('ticket_id', ticket.id)
+          .eq('estado', 'Cargado - Espera Chofer')
+          .order('fecha_hora', { ascending: false })
+          .limit(1);
+
+        if (tiempos && tiempos.length > 0) {
+          const fechaCarga = new Date(tiempos[0].fecha_hora);
+          const tiempoTranscurrido = ahora.getTime() - fechaCarga.getTime();
+
+          if (tiempoTranscurrido > limiteTiempo30min) {
+            this.notificationService.agregarNotificacion(
+              `🚨 Rampla cargada esperando chofer hace más de 30 minutos - Ticket #${ticket.id}`,
+              ticket.id,
+              'error'
             );
           }
         }

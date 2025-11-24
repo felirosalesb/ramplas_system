@@ -94,11 +94,29 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
         throw new Error('Usuario no autenticado');
       }
 
-      console.log('Usuario actual:', user.id);
+      // Obtener nombre_planta del usuario actual
+      const userData = await this.supabaseService['supabase']
+        .from('usuarios')
+        .select('nombre_planta')
+        .eq('id', user.id)
+        .single();
+
+      const nombrePlanta = userData.data?.nombre_planta;
+      console.log('Usuario actual:', user.id, '- Planta:', nombrePlanta);
+
       const todosTickets = await this.supabaseService.getTicketsActivos();
       console.log('Tickets obtenidos:', todosTickets);
-      this.misTickets = todosTickets.filter(t => t.planta_user_id === user.id);
-      console.log('Mis tickets filtrados:', this.misTickets);
+
+      // Filtrar tickets por nombre_planta del usuario
+      // Si el usuario no tiene nombre_planta, usar el filtro antiguo (solo por usuario)
+      if (nombrePlanta) {
+        this.misTickets = todosTickets.filter(t => t.nombre_planta === nombrePlanta);
+        console.log(`Tickets filtrados por planta "${nombrePlanta}":`, this.misTickets);
+      } else {
+        // Fallback: filtrar solo por usuario (para compatibilidad con datos antiguos)
+        this.misTickets = todosTickets.filter(t => t.planta_user_id === user.id);
+        console.log('Tickets filtrados por usuario (sin nombre_planta):', this.misTickets);
+      }
     } catch (error: any) {
       console.error('Error completo al cargar tickets:', error);
       console.error('Mensaje de error:', error.message);
