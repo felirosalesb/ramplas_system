@@ -112,11 +112,11 @@ export class DetalleTicketComponent implements OnInit {
     const iconos: any = {
       'Solicitud Creada': 'add_circle',
       'Pendiente Asignación': 'pending',
-      'Rampla Asignada': 'local_shipping',
+      'Rampla en Tránsito': 'local_shipping',
       'Rampla en Planta': 'factory',
       'Carga iniciada': 'play_circle',
       'Fin de Carga': 'check_circle',
-      'Rampla cargada': 'hourglass_empty',
+      'Cargado - Espera Chofer': 'hourglass_empty',
       'Asignada a Muelle CD': 'warehouse',
       'Inicio Descarga': 'unarchive',
       'Fin Descarga': 'done_all',

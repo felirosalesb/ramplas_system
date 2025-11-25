@@ -144,8 +144,8 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
 
         // Notificar si una rampla fue asignada a mi ticket
         if (payload.eventType === 'UPDATE' &&
-          payload.new.estado_actual === 'Rampla Asignada' &&
-          payload.old.estado_actual !== 'Rampla Asignada') {
+          payload.new.estado_actual === 'Rampla en Tránsito' &&
+          payload.old.estado_actual !== 'Rampla en Tránsito') {
           this.notificationService.agregarNotificacion(
             `Rampla asignada a tu solicitud #${payload.new.id}`,
             payload.new.id,
@@ -154,6 +154,12 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
         }
       }
     });
+
+    // SISTEMA DE POLLING: Actualización automática cada 30 segundos como backup
+    setInterval(() => {
+      console.log('🔄 Auto-actualización de mis tickets (polling)');
+      this.cargarMisTickets();
+    }, 30 * 1000); // 30 segundos
   }
 
   async crearSolicitud(): Promise<void> {
@@ -272,9 +278,12 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
   async cambiarEstado(ticket: Ticket, nuevoEstado: any): Promise<void> {
     this.cargando = true;
     try {
-      // Si es Fin de Carga, usar método específico que pasa automáticamente a "Rampla cargada"
+      console.log('Cambiando estado de ticket:', ticket.id, 'a:', nuevoEstado);
+      // Si es Fin de Carga, usar método específico que pasa automáticamente a "Cargado - Espera Chofer"
       if (nuevoEstado === 'Fin de Carga') {
+        console.log('Llamando a finalizarCarga...');
         await this.supabaseService.finalizarCarga(ticket.id);
+        console.log('finalizarCarga completado exitosamente');
         this.notificationService.agregarNotificacion(
           'Carga finalizada. Rampla en tránsito a bodega',
           ticket.id,
@@ -285,10 +294,12 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
       }
 
       await this.cargarMisTickets();
-    } catch (error) {
-      console.error('Error al cambiar estado:', error);
+    } catch (error: any) {
+      console.error('Error completo al cambiar estado:', error);
+      console.error('Mensaje de error:', error?.message);
+      console.error('Detalles del error:', error?.details);
       this.notificationService.agregarNotificacion(
-        'Error al cambiar estado',
+        `Error al cambiar estado: ${error?.message || 'Error desconocido'}`,
         ticket.id,
         'error'
       );
@@ -299,7 +310,7 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
 
   // Métodos auxiliares para determinar acciones disponibles
   puedeConfirmarLlegada(ticket: Ticket): boolean {
-    return ticket.estado_actual === 'Rampla Asignada';
+    return ticket.estado_actual === 'Rampla en Tránsito';
   }
 
   puedeIniciarCarga(ticket: Ticket): boolean {
@@ -362,11 +373,11 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
   getEstadoColor(estado: string): string {
     const colores: any = {
       'Pendiente Asignación': 'warn',
-      'Rampla Asignada': 'accent',
+      'Rampla en Tránsito': 'accent',
       'Rampla en Planta': 'primary',
       'Carga iniciada': 'primary',
       'Fin de Carga': 'primary',
-      'Rampla cargada': 'accent',
+      'Cargado - Espera Chofer': 'accent',
       'Rechazada': 'warn'
     };
     return colores[estado] || 'primary';

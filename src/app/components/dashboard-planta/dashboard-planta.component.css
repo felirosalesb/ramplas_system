@@ -155,19 +155,126 @@ mat-card-actions button {
     width: 100%;
 }
 
-/* Responsive */
+/* ============================================ */
+/* RESPONSIVE DESIGN PARA SMARTPHONES */
+/* ============================================ */
+
+/* Tablets y pantallas pequeñas */
 @media (max-width: 768px) {
+    .dashboard-container {
+        padding: 12px;
+    }
+
     .header {
         flex-direction: column;
         align-items: flex-start;
         gap: 16px;
     }
 
+    .header h1 {
+        font-size: 22px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
     .tickets-grid {
         grid-template-columns: 1fr;
     }
 
+    mat-card-actions {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
     mat-card-actions button {
+        flex: 1 1 calc(50% - 8px);
+        min-width: 120px;
+    }
+
+    /* Modal ajustado */
+    .modal-content {
+        width: 95vw;
+        max-width: 95vw;
+        margin: 20px auto;
+    }
+}
+
+/* Smartphones en vertical */
+@media (max-width: 480px) {
+    .dashboard-container {
+        padding: 8px;
+    }
+
+    .header h1 {
+        font-size: 20px;
+    }
+
+    .form-card {
+        margin-bottom: 16px;
+    }
+
+    .form-row {
+        gap: 12px;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .form-actions button {
+        width: 100%;
+    }
+
+    /* Pestañas horizontales scrolleables */
+    ::ng-deep .mat-mdc-tab-labels {
+        overflow-x: auto;
+    }
+
+    ::ng-deep .mat-mdc-tab-label {
         min-width: 100px;
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+
+    /* Botones en columna */
+    mat-card-actions {
+        flex-direction: column;
+    }
+
+    mat-card-actions button {
+        width: 100%;
+        flex: none;
+        min-width: unset;
+    }
+
+    /* Info items compactos */
+    .ticket-info {
+        gap: 8px;
+    }
+
+    .info-item {
+        font-size: 13px;
+    }
+
+    /* Modal full screen */
+    .modal-overlay {
+        padding: 0;
+    }
+
+    .modal-content {
+        width: 100vw;
+        height: 100vh;
+        max-width: 100vw;
+        max-height: 100vh;
+        margin: 0;
+        border-radius: 0;
+    }
+
+    /* Radio buttons en columna */
+    .modal-content mat-radio-group {
+        flex-direction: column;
+        gap: 12px;
     }
 }

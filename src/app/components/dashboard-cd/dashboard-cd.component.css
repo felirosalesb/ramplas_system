@@ -432,5 +432,162 @@
 
 /* Color para stat-card planta */
 .stat-card.planta {
-    background: linear-gradient(135deg  );
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* ============================================ */
+/* RESPONSIVE DESIGN PARA SMARTPHONES */
+/* ============================================ */
+
+/* Tablets y pantallas pequeñas */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 12px;
+    }
+
+    .header h1 {
+        font-size: 22px;
+    }
+
+    .pending-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .tickets-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Tabla responsive - scroll horizontal */
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+        min-width: 800px;
+    }
+
+    /* Modal ajustado */
+    .modal-content {
+        width: 95vw;
+        max-width: 95vw;
+        margin: 20px auto;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    /* Botones en columna para móviles */
+    .form-actions {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .form-actions button {
+        width: 100%;
+    }
+
+    /* Cards más compactas */
+    mat-card-actions {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    mat-card-actions button {
+        flex: 1 1 calc(50% - 8px);
+        min-width: 120px;
+    }
+}
+
+/* Smartphones en vertical */
+@media (max-width: 480px) {
+    .dashboard-container {
+        padding: 8px;
+    }
+
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .header h1 {
+        font-size: 20px;
+    }
+
+    /* Pestañas verticales en móvil */
+    ::ng-deep .mat-mdc-tab-labels {
+        flex-direction: row !important;
+        overflow-x: auto;
+    }
+
+    ::ng-deep .mat-mdc-tab-label {
+        min-width: 120px;
+        font-size: 14px;
+        padding: 8px 12px;
+    }
+
+    /* Info items en columna */
+    .ticket-info {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .info-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    /* Botones full width en móvil */
+    mat-card-actions {
+        flex-direction: column;
+    }
+
+    mat-card-actions button {
+        width: 100%;
+        flex: none;
+    }
+
+    /* Chips más pequeños */
+    mat-chip {
+        font-size: 11px;
+        min-height: 28px;
+    }
+
+    /* Tabla con scroll */
+    table {
+        font-size: 13px;
+    }
+
+    th, td {
+        padding: 8px 4px;
+    }
+
+    /* Modal full screen en móvil */
+    .modal-overlay {
+        padding: 0;
+    }
+
+    .modal-content {
+        width: 100vw;
+        height: 100vh;
+        max-width: 100vw;
+        max-height: 100vh;
+        margin: 0;
+        border-radius: 0;
+    }
+
+    /* Stats cards en columna */
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Filtros en columna */
+    .filters {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .filters mat-form-field {
+        width: 100%;
+    }
 }

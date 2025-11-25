@@ -130,10 +130,6 @@
 
               <mat-card-content>
                 <div class="ticket-info">
-                  <div class="info-row">
-                    <mat-icon>inventory_2</mat-icon>
-                    <span>{{ ticket.cantidad_pallet }} pallets</span>
-                  </div>
                   <div class="info-item">
                     <mat-icon>factory</mat-icon>
                     <span>Muelle Planta: {{ ticket.muelle_planta }}</span>
@@ -208,10 +204,6 @@
                   <div class="detail-item">
                     <mat-icon>confirmation_number</mat-icon>
                     <span><strong>Rampla:</strong> {{ ticket.rampla_asignada?.nombre || 'N/A' }}</span>
-                  </div>
-                  <div class="detail-item">
-                    <mat-icon>inventory_2</mat-icon>
-                    <span><strong>Pallets:</strong> {{ ticket.cantidad_pallet }}</span>
                   </div>
                   <div class="detail-item">
                     <mat-icon>factory</mat-icon>
@@ -305,12 +297,6 @@
                 </td>
               </ng-container>
 
-              <!-- Columna Pallets -->
-              <ng-container matColumnDef="pallets">
-                <th mat-header-cell *matHeaderCellDef>Pallets</th>
-                <td mat-cell *matCellDef="let ticket">{{ ticket.cantidad_pallet }}</td>
-              </ng-container>
-
               <!-- Columna Planta -->
               <ng-container matColumnDef="planta">
                 <th mat-header-cell *matHeaderCellDef>Planta</th>
@@ -346,7 +332,23 @@
                             *ngIf="puedeAsignarMuelle(ticket)"
                             (click)="abrirModalAsignarMuelle(ticket)">
                       <mat-icon>garage</mat-icon>
-                      Asignar Muelle y Finalizar
+                      Asignar Muelle CD
+                    </button>
+
+                    <button mat-menu-item 
+                            *ngIf="puedeIniciarDescarga(ticket)"
+                            (click)="cambiarEstado(ticket, 'Inicio Descarga')"
+                            [disabled]="cargando">
+                      <mat-icon>play_arrow</mat-icon>
+                      Iniciar Descarga
+                    </button>
+
+                    <button mat-menu-item 
+                            *ngIf="puedeFinalizarDescarga(ticket)"
+                            (click)="cambiarEstado(ticket, 'Fin Descarga')"
+                            [disabled]="cargando">
+                      <mat-icon>check_circle</mat-icon>
+                      Finalizar Descarga
                     </button>
 
                     <mat-divider></mat-divider>
@@ -359,8 +361,8 @@
                 </td>
               </ng-container>
 
-              <tr mat-header-row *matHeaderRowDef="['id', 'rampla', 'estado', 'pallets', 'planta', 'muellePlanta', 'muelleCD', 'acciones']"></tr>
-              <tr mat-row *matRowDef="let row; columns: ['id', 'rampla', 'estado', 'pallets', 'planta', 'muellePlanta', 'muelleCD', 'acciones']"></tr>
+              <tr mat-header-row *matHeaderRowDef="['id', 'rampla', 'estado', 'planta', 'muellePlanta', 'muelleCD', 'acciones']"></tr>
+              <tr mat-row *matRowDef="let row; columns: ['id', 'rampla', 'estado', 'planta', 'muellePlanta', 'muelleCD', 'acciones']"></tr>
             </table>
           </div>
         </div>
@@ -375,7 +377,6 @@
     <h2>Asignar Rampla al Ticket #{{ ticketSeleccionado.id }}</h2>
     
     <div class="ticket-summary">
-      <p><strong>Cantidad de Pallets:</strong> {{ ticketSeleccionado.cantidad_pallet }}</p>
       <p><strong>Muelle Planta:</strong> {{ ticketSeleccionado.muelle_planta }}</p>
       <p *ngIf="ticketSeleccionado.nombre_planta"><strong>Planta:</strong> {{ ticketSeleccionado.nombre_planta }}</p>
       <p><strong>Creado:</strong> {{ ticketSeleccionado.fecha_creacion | date:'short' }}</p>
@@ -411,7 +412,6 @@
     
     <div class="ticket-summary">
       <p><strong>Rampla:</strong> {{ ticketSeleccionado.rampla_asignada?.nombre || 'No asignada' }}</p>
-      <p><strong>Cantidad de Pallets:</strong> {{ ticketSeleccionado.cantidad_pallet }}</p>
       <p><strong>Estado:</strong> {{ ticketSeleccionado.estado_actual }}</p>
     </div>
 

@@ -181,7 +181,7 @@ export class AlertService {
         const mensaje = `Rampla ${ramplaNombre} asignada a tu solicitud`;
         this.agregarNotificacion(mensaje, ticketId, 'success');
         this.enviarNotificacionTeams(
-            '✅ Rampla Asignada',
+            '✅ Rampla en Tránsito',
             mensaje,
             ticketId
         );

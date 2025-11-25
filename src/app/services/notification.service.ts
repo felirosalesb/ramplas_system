@@ -167,8 +167,8 @@ export class NotificationService {
 
     // ==================== MENSAJES ESPECÍFICOS DEL FLUJO ====================
 
-    notificarNuevaSolicitud(ticketId: number, cantidadPallets: number, muellePlanta: number): void {
-        const mensaje = `Nueva solicitud de retiro: ${cantidadPallets} pallets desde Muelle ${muellePlanta}`;
+    notificarNuevaSolicitud(ticketId: number, muellePlanta: number): void {
+        const mensaje = `Nueva solicitud de retiro desde Muelle ${muellePlanta}`;
         this.agregarNotificacion(mensaje, ticketId, 'info');
         this.enviarNotificacionTeams(
             '🚨 Nueva Solicitud de Retiro',
@@ -181,7 +181,7 @@ export class NotificationService {
         const mensaje = `Rampla ${ramplaNombre} asignada a tu solicitud`;
         this.agregarNotificacion(mensaje, ticketId, 'success');
         this.enviarNotificacionTeams(
-            '✅ Rampla Asignada',
+            '✅ Rampla en Tránsito',
             mensaje,
             ticketId
         );

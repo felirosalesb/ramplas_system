@@ -151,7 +151,7 @@ export class MonitorRamplasComponent implements OnInit, OnDestroy {
 
     const clasesEstado: { [key: string]: string } = {
       'Pendiente Asignación': 'estado-pendiente',
-      'Rampla Asignada': 'estado-asignada',
+      'Rampla en Tránsito': 'estado-asignada',
       'Rampla en Planta': 'estado-planta',
       'Carga iniciada': 'estado-cargando',
       'Fin de Carga': 'estado-cargado',
@@ -169,7 +169,7 @@ export class MonitorRamplasComponent implements OnInit, OnDestroy {
       'Libre': 'check_circle',
       'En Servicio': 'local_shipping',
       'Pendiente Asignación': 'pending',
-      'Rampla Asignada': 'assignment_turned_in',
+      'Rampla en Tránsito': 'assignment_turned_in',
       'Rampla en Planta': 'factory',
       'Carga iniciada': 'upload',
       'Fin de Carga': 'inventory',

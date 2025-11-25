@@ -76,9 +76,6 @@
         <mat-card-content>
           <div class="ticket-info">
             <div class="info-item">
-              <strong>Pallets:</strong> {{ ticket.cantidad_pallet }}
-            </div>
-            <div class="info-item">
               <strong>Muelle Planta:</strong> {{ ticket.muelle_planta }}
             </div>
             <div class="info-item" *ngIf="ticket.rampla_asignada">
@@ -155,9 +152,6 @@
         </mat-card-header>
         <mat-card-content>
           <div class="ticket-info">
-            <div class="info-item">
-              <strong>Pallets:</strong> {{ ticket.cantidad_pallet }}
-            </div>
             <div class="info-item">
               <strong>Muelle:</strong> {{ ticket.muelle_planta }}
             </div>

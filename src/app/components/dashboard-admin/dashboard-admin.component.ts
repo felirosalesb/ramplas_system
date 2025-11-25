@@ -119,7 +119,7 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
       const { data: ticketsAsignadas } = await this.supabaseService['supabase']
         .from('tickets')
         .select('id, estado_actual')
-        .eq('estado_actual', 'Rampla Asignada');
+        .eq('estado_actual', 'Rampla en Tránsito');
 
       if (ticketsAsignadas && ticketsAsignadas.length > 0) {
         for (const ticket of ticketsAsignadas) {
@@ -127,7 +127,7 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
             .from('registros_tiempo')
             .select('fecha_hora')
             .eq('ticket_id', ticket.id)
-            .eq('estado', 'Rampla Asignada')
+            .eq('estado', 'Rampla en Tránsito')
             .order('fecha_hora', { ascending: false })
             .limit(1);
 

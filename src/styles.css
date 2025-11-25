@@ -19,3 +19,101 @@ body {
 .detalle-ticket-dialog .mat-mdc-dialog-surface {
     border-radius: 12px;
 }
+
+/* ============================================ */
+/* ESTILOS GLOBALES RESPONSIVE */
+/* ============================================ */
+
+/* Mejorar usabilidad en móviles */
+@media (max-width: 768px) {
+    /* Botones más grandes para tocar fácil */
+    button {
+        min-height: 44px !important;
+    }
+
+    /* Form fields más espaciados */
+    mat-form-field {
+        font-size: 14px;
+    }
+
+    /* Tabs scrolleables horizontalmente */
+    .mat-mdc-tab-header {
+        overflow-x: auto !important;
+    }
+
+    /* Cards con menos padding */
+    mat-card {
+        padding: 12px !important;
+    }
+
+    mat-card-title {
+        font-size: 18px !important;
+    }
+
+    mat-card-content {
+        font-size: 14px !important;
+    }
+
+    /* Modales adaptados */
+    .mat-mdc-dialog-surface {
+        max-width: 95vw !important;
+    }
+}
+
+/* Smartphones en vertical */
+@media (max-width: 480px) {
+    /* Font sizes ajustados */
+    body {
+        font-size: 14px;
+    }
+
+    h1 {
+        font-size: 20px !important;
+    }
+
+    h2 {
+        font-size: 18px !important;
+    }
+
+    h3 {
+        font-size: 16px !important;
+    }
+
+    /* Botones full width */
+    .mat-mdc-button,
+    .mat-mdc-raised-button,
+    .mat-mdc-fab {
+        min-width: unset !important;
+    }
+
+    /* Inputs más grandes */
+    input,
+    textarea,
+    select {
+        font-size: 16px !important; /* Evita zoom en iOS */
+    }
+
+    /* Modales full screen */
+    .mat-mdc-dialog-surface {
+        max-width: 100vw !important;
+        max-height: 100vh !important;
+        border-radius: 0 !important;
+    }
+
+    /* Tablas scrolleables */
+    .mat-mdc-table {
+        display: block;
+        overflow-x: auto;
+    }
+
+    /* Chips más compactos */
+    .mat-mdc-chip {
+        font-size: 12px !important;
+        min-height: 28px !important;
+    }
+
+    /* Menu items más grandes */
+    .mat-mdc-menu-item {
+        min-height: 44px !important;
+    }
+}

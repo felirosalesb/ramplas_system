@@ -161,7 +161,7 @@ export class SupabaseService {
             .update({
                 rampla_asignada_id: dto.rampla_id,
                 cd_user_id: dto.cd_user_id,
-                estado_actual: 'Rampla Asignada',
+                estado_actual: 'Rampla en Tránsito',
                 fecha_alerta_cd: null
             })
             .eq('id', dto.ticket_id);
@@ -187,7 +187,7 @@ export class SupabaseService {
         }
         console.log('Rampla actualizada correctamente');
 
-        await this.registrarTiempo(dto.ticket_id, 'Rampla Asignada', user.id);
+        await this.registrarTiempo(dto.ticket_id, 'Rampla en Tránsito', user.id);
         console.log('Asignación completada exitosamente');
     }
 
@@ -331,24 +331,18 @@ export class SupabaseService {
             throw new Error('Usuario no autenticado');
         }
 
-        console.log('=== SERVICE: Asignando muelle CD (directo a Fin Descarga) ===');
+        console.log('=== SERVICE: Asignando muelle CD ===');
         console.log('Ticket ID:', ticketId);
         console.log('Muelle:', muelle);
         console.log('Usuario:', user.id);
 
-        // Obtener el ticket para liberar la rampla
-        const { data: ticket } = await this.supabase
-            .from('tickets')
-            .select('rampla_asignada_id')
-            .eq('id', ticketId)
-            .single();
-
-        // Cambio: Ahora pasa directo a "Libre" después de asignar muelle
+        // Solo asigna el muelle y pasa a "Asignada a Muelle CD"
+        // El usuario deberá hacer clic en "Iniciar Descarga" manualmente
         const { data, error } = await this.supabase
             .from('tickets')
             .update({
                 muelle_cd_asignado: muelle,
-                estado_actual: 'Libre'
+                estado_actual: 'Asignada a Muelle CD'
             })
             .eq('id', ticketId)
             .select();
@@ -358,29 +352,11 @@ export class SupabaseService {
             throw error;
         }
 
-        console.log('✅ Ticket actualizado:', data);
+        console.log('✅ Ticket actualizado a Asignada a Muelle CD:', data);
 
-        // Liberar la rampla
-        if (ticket?.rampla_asignada_id) {
-            const { error: ramplaError } = await this.supabase
-                .from('ramplas')
-                .update({
-                    estado: 'Libre',
-                    ticket_actual_id: null
-                })
-                .eq('id', ticket.rampla_asignada_id);
-
-            if (ramplaError) {
-                console.error('Error al liberar rampla:', ramplaError);
-            }
-        }
-
-        // Registrar todos los estados intermedios para historial
+        // Registrar estado
         await this.registrarTiempo(ticketId, 'Asignada a Muelle CD', user.id);
-        await this.registrarTiempo(ticketId, 'Inicio Descarga', user.id);
-        await this.registrarTiempo(ticketId, 'Fin Descarga', user.id);
-        await this.registrarTiempo(ticketId, 'Libre', user.id);
-        console.log('✅ Muelle asignado y rampla liberada correctamente');
+        console.log('✅ Muelle asignado correctamente. Esperando inicio de descarga.');
         console.log('=== SERVICE: Proceso completado ===');
     }
 
@@ -410,14 +386,23 @@ export class SupabaseService {
         const user = this.getCurrentUser();
         if (!user) throw new Error('Usuario no autenticado');
 
-        console.log('Finalizando descarga del ticket:', ticketId);
+        console.log('=== FINALIZANDO DESCARGA ===');
+        console.log('Ticket ID:', ticketId);
 
         // Obtener el ticket para liberar la rampla
-        const { data: ticket } = await this.supabase
+        const { data: ticket, error: selectError } = await this.supabase
             .from('tickets')
             .select('rampla_asignada_id')
             .eq('id', ticketId)
             .single();
+
+        if (selectError) {
+            console.error('Error al obtener ticket:', selectError);
+            throw selectError;
+        }
+
+        console.log('Ticket obtenido:', ticket);
+        console.log('Rampla asignada ID:', ticket?.rampla_asignada_id);
 
         // Actualizar estado del ticket a Libre
         const { error: ticketError } = await this.supabase
@@ -428,12 +413,16 @@ export class SupabaseService {
             .eq('id', ticketId);
 
         if (ticketError) {
-            console.error('Error al finalizar descarga:', ticketError);
+            console.error('❌ Error al actualizar estado del ticket:', ticketError);
             throw ticketError;
         }
 
+        console.log('✅ Estado del ticket actualizado a Libre');
+
         // Liberar la rampla
         if (ticket?.rampla_asignada_id) {
+            console.log('Liberando rampla ID:', ticket.rampla_asignada_id);
+
             const { error: ramplaError } = await this.supabase
                 .from('ramplas')
                 .update({
@@ -443,15 +432,18 @@ export class SupabaseService {
                 .eq('id', ticket.rampla_asignada_id);
 
             if (ramplaError) {
-                console.error('Error al liberar rampla:', ramplaError);
+                console.error('❌ Error al liberar rampla:', ramplaError);
                 throw ramplaError;
             }
-            console.log('Rampla liberada correctamente');
+            console.log('✅ Rampla liberada correctamente');
+        } else {
+            console.warn('⚠️ No hay rampla asignada al ticket');
         }
 
         await this.registrarTiempo(ticketId, 'Fin Descarga', user.id);
         await this.registrarTiempo(ticketId, 'Libre', user.id);
-        console.log('Descarga finalizada y ticket liberado correctamente');
+        console.log('✅ Descarga finalizada y ticket liberado correctamente');
+        console.log('=== FIN FINALIZAR DESCARGA ===');
     }
 
     async finalizarCarga(ticketId: number): Promise<void> {
@@ -463,11 +455,11 @@ export class SupabaseService {
         // Primero registrar "Fin de Carga"
         await this.registrarTiempo(ticketId, 'Fin de Carga', user.id);
 
-        // Luego cambiar automáticamente a "Rampla cargada"
+        // Luego cambiar automáticamente a "Cargado - Espera Chofer"
         const { error } = await this.supabase
             .from('tickets')
             .update({
-                estado_actual: 'Rampla cargada',
+                estado_actual: 'Cargado - Espera Chofer',
                 fecha_alerta_cd: new Date().toISOString() // Marcar cuándo llegó a bodega
             })
             .eq('id', ticketId);
@@ -477,7 +469,7 @@ export class SupabaseService {
             throw error;
         }
 
-        await this.registrarTiempo(ticketId, 'Rampla cargada', user.id);
+        await this.registrarTiempo(ticketId, 'Cargado - Espera Chofer', user.id);
 
         // Crear notificación para todos los usuarios CD
         const { data: usuariosCD } = await this.supabase
@@ -770,24 +762,52 @@ export class SupabaseService {
     // ==================== REALTIME SUBSCRIPTIONS ====================
 
     subscribeToTickets(callback: (payload: any) => void) {
+        console.log('📡 Iniciando suscripción Realtime a tabla tickets...');
+
         return this.supabase
             .channel('tickets-channel')
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'tickets' },
-                callback
+                (payload) => {
+                    console.log('✅ Evento Realtime recibido en tickets:', payload.eventType);
+                    callback(payload);
+                }
             )
-            .subscribe();
+            .subscribe((status) => {
+                console.log('📡 Estado de suscripción tickets:', status);
+                if (status === 'SUBSCRIBED') {
+                    console.log('✅ Suscripción a tickets exitosa');
+                } else if (status === 'CHANNEL_ERROR') {
+                    console.error('❌ Error en canal de tickets');
+                } else if (status === 'TIMED_OUT') {
+                    console.error('⏱️ Timeout en suscripción de tickets');
+                }
+            });
     }
 
     subscribeToRamplas(callback: (payload: any) => void) {
+        console.log('📡 Iniciando suscripción Realtime a tabla ramplas...');
+
         return this.supabase
             .channel('ramplas-channel')
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'ramplas' },
-                callback
+                (payload) => {
+                    console.log('✅ Evento Realtime recibido en ramplas:', payload.eventType);
+                    callback(payload);
+                }
             )
-            .subscribe();
+            .subscribe((status) => {
+                console.log('📡 Estado de suscripción ramplas:', status);
+                if (status === 'SUBSCRIBED') {
+                    console.log('✅ Suscripción a ramplas exitosa');
+                } else if (status === 'CHANNEL_ERROR') {
+                    console.error('❌ Error en canal de ramplas');
+                } else if (status === 'TIMED_OUT') {
+                    console.error('⏱️ Timeout en suscripción de ramplas');
+                }
+            });
     }
 }
