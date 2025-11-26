@@ -409,8 +409,17 @@ export class SupabaseService {
         const user = this.getCurrentUser();
         if (!user) throw new Error('Usuario no autenticado');
 
-        console.log('=== FINALIZANDO DESCARGA ===');
-        console.log('Ticket ID:', ticketId);
+        // Obtener rol del usuario para diagnóstico
+        const { data: userData } = await this.supabase
+            .from('usuarios')
+            .select('rol')
+            .eq('id', user.id)
+            .single();
+
+        console.log('🔧 === FINALIZANDO DESCARGA (CD) ===');
+        console.log('🔧 Ticket ID:', ticketId);
+        console.log('👤 Usuario ID:', user.id);
+        console.log('👤 Usuario rol:', userData?.rol || 'desconocido');
 
         // Obtener el ticket para liberar la rampla
         const { data: ticket, error: selectError } = await this.supabase
@@ -420,12 +429,12 @@ export class SupabaseService {
             .single();
 
         if (selectError) {
-            console.error('Error al obtener ticket:', selectError);
+            console.error('❌ Error al obtener ticket:', selectError);
             throw selectError;
         }
 
-        console.log('Ticket obtenido:', ticket);
-        console.log('Rampla asignada ID:', ticket?.rampla_asignada_id);
+        console.log('📋 Ticket obtenido:', ticket);
+        console.log('🚛 Rampla asignada ID:', ticket?.rampla_asignada_id);
 
         // Actualizar estado del ticket a Libre
         const { error: ticketError } = await this.supabase
@@ -437,6 +446,7 @@ export class SupabaseService {
 
         if (ticketError) {
             console.error('❌ Error al actualizar estado del ticket:', ticketError);
+            console.error('❌ Detalle:', JSON.stringify(ticketError, null, 2));
             throw ticketError;
         }
 
@@ -444,21 +454,49 @@ export class SupabaseService {
 
         // Liberar la rampla
         if (ticket?.rampla_asignada_id) {
-            console.log('Liberando rampla ID:', ticket.rampla_asignada_id);
+            console.log('🔄 === LIBERANDO RAMPLA ===');
+            console.log('🔄 Rampla ID:', ticket.rampla_asignada_id);
+            
+            // Ver estado ANTES
+            const { data: ramplaAntes } = await this.supabase
+                .from('ramplas')
+                .select('id, nombre, estado, ticket_actual_id')
+                .eq('id', ticket.rampla_asignada_id)
+                .single();
+            console.log('📊 Estado ANTES:', ramplaAntes);
 
-            const { error: ramplaError } = await this.supabase
+            const { data: resultUpdate, error: ramplaError } = await this.supabase
                 .from('ramplas')
                 .update({
                     estado: 'Libre',
                     ticket_actual_id: null
                 })
-                .eq('id', ticket.rampla_asignada_id);
+                .eq('id', ticket.rampla_asignada_id)
+                .select();
+
+            console.log('📝 Resultado UPDATE:', resultUpdate);
 
             if (ramplaError) {
                 console.error('❌ Error al liberar rampla:', ramplaError);
+                console.error('❌ Código:', ramplaError.code);
+                console.error('❌ Mensaje:', ramplaError.message);
+                console.error('❌ Detalle completo:', JSON.stringify(ramplaError, null, 2));
                 throw ramplaError;
             }
-            console.log('✅ Rampla liberada correctamente');
+            
+            // Ver estado DESPUÉS
+            const { data: ramplaDespues } = await this.supabase
+                .from('ramplas')
+                .select('id, nombre, estado, ticket_actual_id')
+                .eq('id', ticket.rampla_asignada_id)
+                .single();
+            console.log('📊 Estado DESPUÉS:', ramplaDespues);
+            
+            if (ramplaDespues?.estado === 'Libre') {
+                console.log('✅✅✅ RAMPLA LIBERADA EXITOSAMENTE');
+            } else {
+                console.error('❌❌❌ FALLO: Rampla NO se liberó. Estado actual:', ramplaDespues?.estado);
+            }
         } else {
             console.warn('⚠️ No hay rampla asignada al ticket');
         }
@@ -568,7 +606,17 @@ export class SupabaseService {
         const user = this.getCurrentUser();
         if (!user) throw new Error('Usuario no autenticado');
 
-        console.log('🔧 Finalizando descarga y liberando rampla para ticket:', ticketId);
+        // Obtener rol del usuario desde la tabla usuarios
+        const { data: userData } = await this.supabase
+            .from('usuarios')
+            .select('rol')
+            .eq('id', user.id)
+            .single();
+
+        console.log('🔧 === FINALIZANDO DESCARGA Y LIBERANDO RAMPLA ===');
+        console.log('🔧 Ticket ID:', ticketId);
+        console.log('👤 Usuario ID:', user.id);
+        console.log('👤 Usuario rol:', userData?.rol || 'desconocido');
 
         // Registrar "Fin Descarga"
         await this.registrarTiempo(ticketId, 'Fin Descarga', user.id);
@@ -576,20 +624,22 @@ export class SupabaseService {
         // Obtener información completa del ticket
         const { data: ticket, error: ticketError } = await this.supabase
             .from('tickets')
-            .select('id, rampla_asignada_id, planta_user_id, estado_actual')
+            .select('id, rampla_asignada_id, planta_user_id, estado_actual, tipo_ticket')
             .eq('id', ticketId)
             .single();
 
         if (ticketError) {
             console.error('❌ Error al obtener ticket:', ticketError);
+            console.error('❌ Detalle:', JSON.stringify(ticketError, null, 2));
             throw ticketError;
         }
 
         console.log('📋 Ticket obtenido:', ticket);
+        console.log('📋 Tipo ticket:', ticket?.tipo_ticket);
         console.log('🚛 Rampla asignada ID:', ticket?.rampla_asignada_id);
 
         if (!ticket?.rampla_asignada_id) {
-            console.warn('⚠️ El ticket no tiene rampla asignada');
+            console.warn('⚠️⚠️⚠️ El ticket no tiene rampla asignada');
         }
 
         // Actualizar ticket a 'Libre'
@@ -600,42 +650,67 @@ export class SupabaseService {
 
         if (updateError) {
             console.error('❌ Error al actualizar ticket:', updateError);
+            console.error('❌ Detalle:', JSON.stringify(updateError, null, 2));
             throw updateError;
         }
         console.log('✅ Ticket actualizado a estado Libre');
 
         // Liberar la rampla
         if (ticket?.rampla_asignada_id) {
-            console.log('🔄 Liberando rampla ID:', ticket.rampla_asignada_id);
+            console.log('🔄 === PROCESO DE LIBERACIÓN DE RAMPLA ===');
+            console.log('🔄 Rampla ID a liberar:', ticket.rampla_asignada_id);
             
             // Verificar estado actual de la rampla antes de liberar
-            const { data: ramplaAntes } = await this.supabase
+            const { data: ramplaAntes, error: errorAntes } = await this.supabase
                 .from('ramplas')
-                .select('id, estado, ticket_actual_id')
+                .select('id, nombre, estado, ticket_actual_id')
                 .eq('id', ticket.rampla_asignada_id)
                 .single();
             
-            console.log('📊 Estado rampla antes de liberar:', ramplaAntes);
+            console.log('📊 Estado ANTES de liberar:', ramplaAntes);
+            if (errorAntes) {
+                console.error('⚠️ Error al leer estado anterior:', errorAntes);
+            }
 
-            const { error: ramplaError } = await this.supabase
+            const { data: resultUpdate, error: ramplaError } = await this.supabase
                 .from('ramplas')
                 .update({ estado: 'Libre', ticket_actual_id: null })
-                .eq('id', ticket.rampla_asignada_id);
+                .eq('id', ticket.rampla_asignada_id)
+                .select();
 
+            console.log('📝 Resultado del UPDATE rampla:', resultUpdate);
+            
             if (ramplaError) {
-                console.error('❌ Error al liberar rampla:', ramplaError);
+                console.error('❌❌❌ Error al liberar rampla:', ramplaError);
+                console.error('❌ Código de error:', ramplaError.code);
+                console.error('❌ Mensaje:', ramplaError.message);
+                console.error('❌ Detalles completos:', JSON.stringify(ramplaError, null, 2));
+                console.error('❌ Hint:', ramplaError.hint);
                 throw ramplaError;
             }
 
             // Verificar que se liberó correctamente
-            const { data: ramplaDespues } = await this.supabase
+            const { data: ramplaDespues, error: errorDespues } = await this.supabase
                 .from('ramplas')
-                .select('id, estado, ticket_actual_id')
+                .select('id, nombre, estado, ticket_actual_id')
                 .eq('id', ticket.rampla_asignada_id)
                 .single();
 
-            console.log('📊 Estado rampla después de liberar:', ramplaDespues);
-            console.log('✅ Rampla liberada exitosamente:', ticket.rampla_asignada_id);
+            console.log('📊 Estado DESPUÉS de liberar:', ramplaDespues);
+            if (errorDespues) {
+                console.error('⚠️ Error al leer estado posterior:', errorDespues);
+            }
+            
+            // Verificación explícita
+            if (ramplaDespues?.estado === 'Libre') {
+                console.log('✅✅✅ RAMPLA LIBERADA EXITOSAMENTE');
+                console.log('✅ Rampla:', ramplaDespues.nombre, '- Estado:', ramplaDespues.estado);
+            } else {
+                console.error('❌❌❌ FALLO EN LIBERACIÓN DE RAMPLA');
+                console.error('❌ Estado esperado: Libre');
+                console.error('❌ Estado actual:', ramplaDespues?.estado);
+                console.error('❌ ticket_actual_id:', ramplaDespues?.ticket_actual_id);
+            }
         } else {
             console.log('ℹ️ No hay rampla asignada para liberar');
         }
