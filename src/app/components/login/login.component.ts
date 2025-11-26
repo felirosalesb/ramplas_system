@@ -115,6 +115,9 @@ export class LoginComponent implements OnInit {
       case 'cd':
         ruta = '/dashboard-cd';
         break;
+      case 'galpon':
+        ruta = '/dashboard-galpon';
+        break;
       case 'admin':
         ruta = '/dashboard-admin';
         break;

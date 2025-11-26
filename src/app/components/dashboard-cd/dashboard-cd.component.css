@@ -436,6 +436,27 @@
 }
 
 /* ============================================ */
+/* ESTILOS PARA TIPO DE TICKET */
+/* ============================================ */
+.chip-tipo {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 8px;
+}
+
+.chip-tipo.tipo-retiro {
+    background-color: #e3f2fd !important;
+    color: #1565c0 !important;
+    border: 1px solid #90caf9;
+}
+
+.chip-tipo.tipo-solicitar {
+    background-color: #fff3e0 !important;
+    color: #e65100 !important;
+    border: 1px solid #ffb74d;
+}
+
+/* ============================================ */
 /* RESPONSIVE DESIGN PARA SMARTPHONES */
 /* ============================================ */
 
@@ -551,6 +572,11 @@
     mat-chip {
         font-size: 11px;
         min-height: 28px;
+    }
+
+    /* Chips de tipo */
+    .chip-tipo {
+        font-size: 10px;
     }
 
     /* Tabla con scroll */

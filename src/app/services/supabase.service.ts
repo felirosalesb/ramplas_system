@@ -104,6 +104,7 @@ export class SupabaseService {
 
         const ticketData = {
             planta_user_id: user.id,
+            tipo_ticket: dto.tipo_ticket,
             cantidad_pallet: dto.cantidad_pallet || 1,
             muelle_planta: dto.muelle_planta,
             nombre_planta: userData?.nombre_planta || null,
@@ -112,6 +113,9 @@ export class SupabaseService {
         };
 
         console.log('Datos a insertar:', ticketData);
+        console.log('tipo_ticket valor exacto:', dto.tipo_ticket);
+        console.log('tipo_ticket longitud:', dto.tipo_ticket.length);
+        console.log('tipo_ticket charCodes:', Array.from(dto.tipo_ticket).map(c => c.charCodeAt(0)));
 
         const { data, error } = await this.supabase
             .from('tickets')
@@ -309,17 +313,36 @@ export class SupabaseService {
         await this.registrarTiempo(ticketId, nuevoEstado, user.id);
 
         if (nuevoEstado === 'Libre') {
-            const { data: ticket } = await this.supabase
+            console.log('🔧 [cambiarEstadoTicket] Liberando rampla para ticket:', ticketId);
+            const { data: ticket, error: selectError } = await this.supabase
                 .from('tickets')
-                .select('rampla_asignada_id')
+                .select('id, rampla_asignada_id, estado_actual')
                 .eq('id', ticketId)
                 .single();
 
+            if (selectError) {
+                console.error('❌ Error al obtener ticket para liberar rampla:', selectError);
+                throw selectError;
+            }
+
+            console.log('📋 [cambiarEstadoTicket] Ticket info:', ticket);
+
             if (ticket?.rampla_asignada_id) {
-                await this.supabase
+                console.log('🔄 [cambiarEstadoTicket] Liberando rampla ID:', ticket.rampla_asignada_id);
+                
+                const { error: ramplaError, data: updateData } = await this.supabase
                     .from('ramplas')
                     .update({ estado: 'Libre', ticket_actual_id: null })
-                    .eq('id', ticket.rampla_asignada_id);
+                    .eq('id', ticket.rampla_asignada_id)
+                    .select();
+                
+                if (ramplaError) {
+                    console.error('❌ [cambiarEstadoTicket] Error al liberar rampla:', ramplaError);
+                    throw ramplaError;
+                }
+                console.log('✅ [cambiarEstadoTicket] Rampla liberada:', ticket.rampla_asignada_id, updateData);
+            } else {
+                console.log('ℹ️ [cambiarEstadoTicket] No hay rampla asignada para liberar');
             }
         }
     }
@@ -492,6 +515,135 @@ export class SupabaseService {
         }
 
         console.log('Carga finalizada, ticket en tránsito a bodega, CD notificado');
+    }
+
+    async finalizarCargaGalpon(ticketId: number): Promise<void> {
+        const user = this.getCurrentUser();
+        if (!user) throw new Error('Usuario no autenticado');
+
+        console.log('Finalizando carga en galpón del ticket:', ticketId);
+
+        // Registrar "Fin de Carga" en galpón
+        await this.registrarTiempo(ticketId, 'Fin de Carga', user.id);
+
+        // Cambiar automáticamente a "Rampla Cargada - Tránsito CD"
+        const { error } = await this.supabase
+            .from('tickets')
+            .update({
+                estado_actual: 'Rampla Cargada - Tránsito CD',
+                fecha_alerta_cd: new Date().toISOString()
+            })
+            .eq('id', ticketId);
+
+        if (error) {
+            console.error('Error al finalizar carga en galpón:', error);
+            throw error;
+        }
+
+        await this.registrarTiempo(ticketId, 'Rampla Cargada - Tránsito CD', user.id);
+
+        // Notificar a planta (quien solicitó el envío) que la rampla va en camino
+        const { data: ticket } = await this.supabase
+            .from('tickets')
+            .select('planta_user_id')
+            .eq('id', ticketId)
+            .single();
+
+        if (ticket) {
+            await this.supabase
+                .from('notificaciones')
+                .insert({
+                    usuario_id: ticket.planta_user_id,
+                    ticket_id: ticketId,
+                    tipo: 'info',
+                    mensaje: `Rampla cargada en galpón. En tránsito a CD - Ticket #${ticketId}`,
+                    leido: false
+                });
+        }
+
+        console.log('Carga en galpón finalizada, rampla en tránsito a CD');
+    }
+
+    async finalizarDescargaYLiberarRampla(ticketId: number): Promise<void> {
+        const user = this.getCurrentUser();
+        if (!user) throw new Error('Usuario no autenticado');
+
+        console.log('🔧 Finalizando descarga y liberando rampla para ticket:', ticketId);
+
+        // Registrar "Fin Descarga"
+        await this.registrarTiempo(ticketId, 'Fin Descarga', user.id);
+
+        // Obtener información completa del ticket
+        const { data: ticket, error: ticketError } = await this.supabase
+            .from('tickets')
+            .select('id, rampla_asignada_id, planta_user_id, estado_actual')
+            .eq('id', ticketId)
+            .single();
+
+        if (ticketError) {
+            console.error('❌ Error al obtener ticket:', ticketError);
+            throw ticketError;
+        }
+
+        console.log('📋 Ticket obtenido:', ticket);
+        console.log('🚛 Rampla asignada ID:', ticket?.rampla_asignada_id);
+
+        if (!ticket?.rampla_asignada_id) {
+            console.warn('⚠️ El ticket no tiene rampla asignada');
+        }
+
+        // Actualizar ticket a 'Libre'
+        const { error: updateError } = await this.supabase
+            .from('tickets')
+            .update({ estado_actual: 'Libre' })
+            .eq('id', ticketId);
+
+        if (updateError) {
+            console.error('❌ Error al actualizar ticket:', updateError);
+            throw updateError;
+        }
+        console.log('✅ Ticket actualizado a estado Libre');
+
+        // Liberar la rampla
+        if (ticket?.rampla_asignada_id) {
+            console.log('🔄 Liberando rampla ID:', ticket.rampla_asignada_id);
+            
+            // Verificar estado actual de la rampla antes de liberar
+            const { data: ramplaAntes } = await this.supabase
+                .from('ramplas')
+                .select('id, estado, ticket_actual_id')
+                .eq('id', ticket.rampla_asignada_id)
+                .single();
+            
+            console.log('📊 Estado rampla antes de liberar:', ramplaAntes);
+
+            const { error: ramplaError } = await this.supabase
+                .from('ramplas')
+                .update({ estado: 'Libre', ticket_actual_id: null })
+                .eq('id', ticket.rampla_asignada_id);
+
+            if (ramplaError) {
+                console.error('❌ Error al liberar rampla:', ramplaError);
+                throw ramplaError;
+            }
+
+            // Verificar que se liberó correctamente
+            const { data: ramplaDespues } = await this.supabase
+                .from('ramplas')
+                .select('id, estado, ticket_actual_id')
+                .eq('id', ticket.rampla_asignada_id)
+                .single();
+
+            console.log('📊 Estado rampla después de liberar:', ramplaDespues);
+            console.log('✅ Rampla liberada exitosamente:', ticket.rampla_asignada_id);
+        } else {
+            console.log('ℹ️ No hay rampla asignada para liberar');
+        }
+
+        // Registrar estado final "Libre"
+        await this.registrarTiempo(ticketId, 'Libre', user.id);
+
+        console.log('🎉 Descarga finalizada y rampla liberada para ticket:', ticketId);
     }
 
     async getTicketById(ticketId: number): Promise<Ticket | null> {

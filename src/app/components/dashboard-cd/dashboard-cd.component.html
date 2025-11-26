@@ -131,11 +131,15 @@
               <mat-card-content>
                 <div class="ticket-info">
                   <div class="info-item">
-                    <mat-icon>factory</mat-icon>
+                    
+                    <span><strong>Tipo Solicitud:</strong> {{ ticket.tipo_ticket }}</span>
+                  </div>
+                  <div class="info-item">
+                    
                     <span>Muelle Planta: {{ ticket.muelle_planta }}</span>
                   </div>
                   <div class="info-item" *ngIf="ticket.nombre_planta">
-                    <mat-icon>location_city</mat-icon>
+                    
                     <span>Planta: {{ ticket.nombre_planta }}</span>
                   </div>
                   <div class="info-row" *ngIf="ticket.fecha_alerta_cd">
@@ -202,6 +206,10 @@
 
                 <div class="ticket-list-details">
                   <div class="detail-item">
+                    <mat-icon>label</mat-icon>
+                    <span><strong>Tipo:</strong> {{ ticket.tipo_ticket }}</span>
+                  </div>
+                  <div class="detail-item">
                     <mat-icon>confirmation_number</mat-icon>
                     <span><strong>Rampla:</strong> {{ ticket.rampla_asignada?.nombre || 'N/A' }}</span>
                   </div>
@@ -213,6 +221,10 @@
                     <mat-icon>location_city</mat-icon>
                     <span><strong>Planta:</strong> {{ ticket.nombre_planta }}</span>
                   </div>
+                  <div class="detail-item">
+                    <mat-icon>ticket</mat-icon>
+                    <span><strong>Tipo Solicitud:</strong> {{ ticket.tipo_ticket }}</span>
+                     </div>
                   <div class="detail-item">
                     <mat-icon>schedule</mat-icon>
                     <span><strong>Creado:</strong> {{ ticket.fecha_creacion | date:'dd/MM/yy HH:mm' }}</span>
@@ -297,6 +309,16 @@
                 </td>
               </ng-container>
 
+              <!-- Columna Tipo -->
+              <ng-container matColumnDef="tipo">
+                <th mat-header-cell *matHeaderCellDef>Tipo</th>
+                <td mat-cell *matCellDef="let ticket">
+                  <mat-chip class="chip-tipo" [class.tipo-retiro]="ticket.tipo_ticket === 'Retiro pallets producción'" [class.tipo-solicitar]="ticket.tipo_ticket === 'Solicitar Pallets vacíos'">
+                    {{ ticket.tipo_ticket }}
+                  </mat-chip>
+                </td>
+              </ng-container>
+
               <!-- Columna Planta -->
               <ng-container matColumnDef="planta">
                 <th mat-header-cell *matHeaderCellDef>Planta</th>
@@ -361,8 +383,8 @@
                 </td>
               </ng-container>
 
-              <tr mat-header-row *matHeaderRowDef="['id', 'rampla', 'estado', 'planta', 'muellePlanta', 'muelleCD', 'acciones']"></tr>
-              <tr mat-row *matRowDef="let row; columns: ['id', 'rampla', 'estado', 'planta', 'muellePlanta', 'muelleCD', 'acciones']"></tr>
+              <tr mat-header-row *matHeaderRowDef="['id', 'tipo', 'rampla', 'estado', 'planta', 'muellePlanta', 'muelleCD', 'acciones']"></tr>
+              <tr mat-row *matRowDef="let row; columns: ['id', 'tipo', 'rampla', 'estado', 'planta', 'muellePlanta', 'muelleCD', 'acciones']"></tr>
             </table>
           </div>
         </div>
@@ -377,6 +399,7 @@
     <h2>Asignar Rampla al Ticket #{{ ticketSeleccionado.id }}</h2>
     
     <div class="ticket-summary">
+      <p><strong>Tipo:</strong> {{ ticketSeleccionado.tipo_ticket }}</p>
       <p><strong>Muelle Planta:</strong> {{ ticketSeleccionado.muelle_planta }}</p>
       <p *ngIf="ticketSeleccionado.nombre_planta"><strong>Planta:</strong> {{ ticketSeleccionado.nombre_planta }}</p>
       <p><strong>Creado:</strong> {{ ticketSeleccionado.fecha_creacion | date:'short' }}</p>

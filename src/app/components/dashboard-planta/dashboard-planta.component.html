@@ -12,11 +12,28 @@
   <!-- FORMULARIO DE NUEVA SOLICITUD -->
   <mat-card *ngIf="mostrarFormulario" class="form-card">
     <mat-card-header>
-      <mat-card-title>Nueva Solicitud de Retiro</mat-card-title>
+      <mat-card-title>Nueva Solicitud</mat-card-title>
     </mat-card-header>
     <mat-card-content>
       <form [formGroup]="formularioSolicitud" (ngSubmit)="crearSolicitud()">
         <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Tipo de Solicitud</mat-label>
+            <mat-select formControlName="tipo_ticket">
+              <mat-option value="Retiro pallets producción">
+                <mat-icon>input</mat-icon>
+                Retiro pallets producción
+              </mat-option>
+              <mat-option value="Solicitar Pallets vacíos">
+                <mat-icon>output</mat-icon>
+                Solicitar Pallets vacíos
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="tipoTicketInvalid">
+              {{ getErrorMessage('tipo_ticket') }}
+            </mat-error>
+          </mat-form-field>
+
           <mat-form-field appearance="outline">
             <mat-label>Muelle en Planta</mat-label>
             <input 
@@ -76,6 +93,9 @@
         <mat-card-content>
           <div class="ticket-info">
             <div class="info-item">
+              <strong>Tipo solicitud:</strong> {{ ticket.tipo_ticket }}
+            </div>
+            <div class="info-item">
               <strong>Muelle Planta:</strong> {{ ticket.muelle_planta }}
             </div>
             <div class="info-item" *ngIf="ticket.rampla_asignada">
@@ -109,6 +129,44 @@
           >
             <mat-icon>done</mat-icon>
             Finalizar Carga
+          </button>
+
+          <!-- === BOTONES PARA DESCARGA DE TICKETS DEL GALPÓN === -->
+          
+          <!-- Confirmar llegada desde galpón -->
+          <button 
+            mat-raised-button 
+            color="accent"
+            *ngIf="puedeConfirmarLlegadaDesdeGalpon(ticket)"
+            (click)="confirmarLlegadaDesdeGalpon(ticket)"
+            [disabled]="cargando"
+          >
+            <mat-icon>local_shipping</mat-icon>
+            Confirmar Llegada
+          </button>
+
+          <!-- Iniciar descarga -->
+          <button 
+            mat-raised-button 
+            color="primary"
+            *ngIf="puedeIniciarDescarga(ticket)"
+            (click)="iniciarDescargaGalpon(ticket)"
+            [disabled]="cargando"
+          >
+            <mat-icon>play_arrow</mat-icon>
+            Iniciar Descarga
+          </button>
+
+          <!-- Finalizar descarga -->
+          <button 
+            mat-raised-button 
+            color="primary"
+            *ngIf="puedeFinalizarDescarga(ticket)"
+            (click)="finalizarDescargaGalpon(ticket)"
+            [disabled]="cargando"
+          >
+            <mat-icon>check_circle</mat-icon>
+            Finalizar Descarga
           </button>
 
           <!-- Ver detalle -->
@@ -152,6 +210,9 @@
         </mat-card-header>
         <mat-card-content>
           <div class="ticket-info">
+            <div class="info-item">
+              <strong>Tipo solicitud:</strong> {{ ticket.tipo_ticket }}
+            </div>
             <div class="info-item">
               <strong>Muelle:</strong> {{ ticket.muelle_planta }}
             </div>

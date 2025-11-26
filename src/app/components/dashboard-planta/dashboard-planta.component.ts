@@ -12,6 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatRadioModule } from '@angular/material/radio';
+import { MatSelectModule } from '@angular/material/select';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { SupabaseService } from '../../services/supabase.service';
@@ -35,6 +36,7 @@ import { DetalleTicketComponent } from '../detalle-ticket/detalle-ticket.compone
     MatProgressSpinnerModule,
     MatChipsModule,
     MatRadioModule,
+    MatSelectModule,
     MatDialogModule,
     MatTooltipModule,
     NavbarComponent
@@ -64,6 +66,7 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
     private dialog: MatDialog
   ) {
     this.formularioSolicitud = this.fb.group({
+      tipo_ticket: ['Retiro pallets producción', [Validators.required]],
       muelle_planta: ['', [Validators.required, Validators.min(1)]]
     });
   }
@@ -188,6 +191,9 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
     try {
       const dto: CreateTicketDTO = this.formularioSolicitud.value;
       console.log('DTO a enviar:', dto);
+      console.log('tipo_ticket del DTO:', dto.tipo_ticket);
+      console.log('tipo_ticket typeof:', typeof dto.tipo_ticket);
+      console.log('tipo_ticket length:', dto.tipo_ticket?.length);
 
       const nuevoTicket = await this.supabaseService.crearTicketPlanta(dto);
       console.log('Ticket creado:', nuevoTicket);
@@ -378,6 +384,12 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
       'Carga iniciada': 'primary',
       'Fin de Carga': 'primary',
       'Cargado - Espera Chofer': 'accent',
+      'Rampla en Galpón': 'accent',
+      'Carga Iniciada Galpón': 'primary',
+      'Rampla Cargada - Tránsito CD': 'accent',
+      'Inicio Descarga': 'primary',
+      'Fin Descarga': 'primary',
+      'Libre': 'primary',
       'Rechazada': 'warn'
     };
     return colores[estado] || 'primary';
@@ -399,6 +411,11 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
   }
 
   // Validaciones del formulario
+  get tipoTicketInvalid(): boolean {
+    const control = this.formularioSolicitud.get('tipo_ticket');
+    return !!(control && control.invalid && control.touched);
+  }
+
   get muellePlantaInvalid(): boolean {
     const control = this.formularioSolicitud.get('muelle_planta');
     return !!(control && control.invalid && control.touched);
@@ -437,6 +454,91 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
       console.log('Dialog abierto:', dialogRef);
     } catch (error) {
       console.error('Error al abrir modal:', error);
+    }
+  }
+
+  // ===== MÉTODOS PARA DESCARGA DE TICKETS DEL GALPÓN =====
+
+  puedeConfirmarLlegadaDesdeGalpon(ticket: Ticket): boolean {
+    return ticket.tipo_ticket === 'Solicitar Pallets vacíos' && 
+           ticket.estado_actual === 'Rampla Cargada - Tránsito CD';
+  }
+
+  puedeIniciarDescarga(ticket: Ticket): boolean {
+    return ticket.tipo_ticket === 'Solicitar Pallets vacíos' && 
+           ticket.estado_actual === 'Rampla en Planta';
+  }
+
+  puedeFinalizarDescarga(ticket: Ticket): boolean {
+    return ticket.tipo_ticket === 'Solicitar Pallets vacíos' && 
+           ticket.estado_actual === 'Inicio Descarga';
+  }
+
+  async confirmarLlegadaDesdeGalpon(ticket: Ticket): Promise<void> {
+    this.cargando = true;
+    try {
+      await this.supabaseService.cambiarEstadoTicket(ticket.id, 'Rampla en Planta');
+      this.notificationService.agregarNotificacion(
+        `Rampla llegó a planta desde galpón - Ticket #${ticket.id}`,
+        ticket.id,
+        'success'
+      );
+      await this.cargarMisTickets();
+    } catch (error) {
+      console.error('Error al confirmar llegada desde galpón:', error);
+      this.notificationService.agregarNotificacion(
+        'Error al confirmar llegada desde galpón',
+        ticket.id,
+        'error'
+      );
+    } finally {
+      this.cargando = false;
+    }
+  }
+
+  async iniciarDescargaGalpon(ticket: Ticket): Promise<void> {
+    this.cargando = true;
+    try {
+      await this.supabaseService.cambiarEstadoTicket(ticket.id, 'Inicio Descarga');
+      this.notificationService.agregarNotificacion(
+        `Descarga iniciada - Ticket #${ticket.id}`,
+        ticket.id,
+        'success'
+      );
+      await this.cargarMisTickets();
+    } catch (error) {
+      console.error('Error al iniciar descarga:', error);
+      this.notificationService.agregarNotificacion(
+        'Error al iniciar descarga',
+        ticket.id,
+        'error'
+      );
+    } finally {
+      this.cargando = false;
+    }
+  }
+
+  async finalizarDescargaGalpon(ticket: Ticket): Promise<void> {
+    this.cargando = true;
+    try {
+      // Usar método específico que maneja todo el proceso
+      await this.supabaseService.finalizarDescargaYLiberarRampla(ticket.id);
+      
+      this.notificationService.agregarNotificacion(
+        `Descarga finalizada y rampla liberada - Ticket #${ticket.id}`,
+        ticket.id,
+        'success'
+      );
+      await this.cargarMisTickets();
+    } catch (error) {
+      console.error('Error al finalizar descarga:', error);
+      this.notificationService.agregarNotificacion(
+        'Error al finalizar descarga',
+        ticket.id,
+        'error'
+      );
+    } finally {
+      this.cargando = false;
     }
   }
 }

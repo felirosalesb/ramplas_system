@@ -1,6 +1,7 @@
 // src/app/models/models.ts
 
 export type TipoRampla = 'frugon_cerrado' | 'cortina';
+export type TipoTicket = 'Retiro pallets producción' | 'Solicitar Pallets vacíos';
 
 export interface Rampla {
     id: number;
@@ -16,11 +17,18 @@ export type EstadoTicket =
     | 'Solicitud Creada'
     | 'Pendiente Asignación'
     | 'Rampla Asignada'
+    // Estados compartidos (retiro y envío)
     | 'Rampla en Tránsito'
+    // Estados específicos de RETIRO 
     | 'Rampla en Planta'
     | 'Carga iniciada'
     | 'Fin de Carga'
     | 'Cargado - Espera Chofer'
+    // Estados específicos de ENVÍO 
+    | 'Rampla en Galpón'
+    | 'Carga Iniciada Galpón'
+    | 'Rampla Cargada - Tránsito CD'
+    // Estados de descarga en CD
     | 'Asignada a Muelle CD'
     | 'Inicio Descarga'
     | 'Fin Descarga'
@@ -31,6 +39,7 @@ export interface Ticket {
     id: number;
     planta_user_id: string;
     cd_user_id: string | null;
+    tipo_ticket: TipoTicket;
     cantidad_pallet: number;
     muelle_planta: number;
     nombre_planta: string | null;
@@ -48,7 +57,7 @@ export interface Ticket {
 export interface Usuario {
     id: string;
     email: string;
-    rol: 'planta' | 'cd' | 'admin';
+    rol: 'planta' | 'cd' | 'admin' | 'galpon';
     nombre: string;
     nombre_planta: string | null;
     created_at?: string;
@@ -63,6 +72,7 @@ export interface RegistroTiempo {
 }
 
 export interface CreateTicketDTO {
+    tipo_ticket: TipoTicket;
     cantidad_pallet?: number;
     muelle_planta: number;
 }

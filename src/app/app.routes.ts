@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { LoginComponent } from './components/login/login.component';
 import { DashboardPlantaComponent } from './components/dashboard-planta/dashboard-planta.component';
 import { DashboardCdComponent } from './components/dashboard-cd/dashboard-cd.component';
+import { DashboardGalponComponent } from './components/dashboard-galpon/dashboard-galpon.component';
 import { MonitorRamplasComponent } from './components/monitor-ramplas/monitor-ramplas.component';
 import { DetalleTicketComponent } from './components/detalle-ticket/detalle-ticket.component';
 import { NotificacionesComponent } from './components/notificaciones/notificaciones.component';
@@ -31,6 +32,11 @@ export const routes: Routes = [
     {
         path: 'dashboard-cd',
         component: DashboardCdComponent,
+        canActivate: [AuthGuard]
+    },
+    {
+        path: 'dashboard-galpon',
+        component: DashboardGalponComponent,
         canActivate: [AuthGuard]
     },
     {
