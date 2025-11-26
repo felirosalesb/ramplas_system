@@ -18,6 +18,30 @@
     font-size: 28px;
 }
 
+/* Tabs de administración */
+.admin-tabs {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.tab-content {
+    padding: 24px;
+}
+
+.tab-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.tab-header h2 {
+    margin: 0;
+    color: #333;
+    font-size: 24px;
+}
+
 .dashboard-content {
     max-width: 1400px;
     margin: 0 auto;

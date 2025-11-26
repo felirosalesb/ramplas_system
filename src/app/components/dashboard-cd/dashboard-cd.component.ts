@@ -19,7 +19,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { SupabaseService } from '../../services/supabase.service';
 import { NotificationService } from '../../services/notification.service';
-import { Ticket, Rampla } from '../../models/models';
+import { Ticket, Rampla, Muelle } from '../../models/models';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { DetalleTicketComponent } from '../detalle-ticket/detalle-ticket.component';
 
@@ -61,9 +61,12 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
   ticketsActivos: Ticket[] = [];
   ramplas: Rampla[] = [];
   ramplasLibres: Rampla[] = [];
+  muelles: Muelle[] = [];
+  muellesLibres: Muelle[] = [];
 
   ticketSeleccionado: Ticket | null = null;
   ramplaSeleccionada: number | null = null;
+  muelleSeleccionado: number | null = null;
   muelleCD: number | null = null;
   modalActivo: 'rampla' | 'muelle' | null = null;
 
@@ -111,10 +114,12 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
     this.cargando = true;
     try {
       console.log('Cargando datos del dashboard CD...');
-      const [todosTickets, todasRamplas, ramplasLibres] = await Promise.all([
+      const [todosTickets, todasRamplas, ramplasLibres, todosMuelles, muellesLibres] = await Promise.all([
         this.supabaseService.getTicketsActivos(),
         this.supabaseService.getAllRamplas(),
-        this.supabaseService.getRamplasLibres()
+        this.supabaseService.getRamplasLibres(),
+        this.supabaseService.getMuelles(),
+        this.supabaseService.getMuellesLibres()
       ]);
 
       // Separar tickets por estado
@@ -136,6 +141,8 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
       this.ticketsActivos = todosTickets;
       this.ramplas = todasRamplas;
       this.ramplasLibres = ramplasLibres;
+      this.muelles = todosMuelles;
+      this.muellesLibres = muellesLibres;
 
       // Calcular contadores por estado de ramplas
       this.calcularContadoresEstadoRamplas();
@@ -144,6 +151,7 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
       console.log('Tickets en planta:', this.ticketsEnPlanta.length);
       console.log('Tickets en tránsito:', this.ticketsEnTransito.length);
       console.log('Ramplas libres:', this.ramplasLibres.length);
+      console.log('Muelles libres:', this.muellesLibres.length);
     } catch (error: any) {
       console.error('Error al cargar datos:', error);
       console.error('Mensaje:', error.message);
@@ -328,16 +336,17 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
     }
   }
 
-  async asignarMuelleCD(ticket: Ticket): Promise<void> {
+  async asignarMuelleCD(ticket: Ticket, automatico: boolean = false): Promise<void> {
     console.log('=== ASIGNAR MUELLE CD ===');
     console.log('Ticket:', ticket.id);
-    console.log('Muelle CD ingresado:', this.muelleCD);
+    console.log('Muelle seleccionado:', this.muelleSeleccionado);
     console.log('Estado del ticket:', ticket.estado_actual);
+    console.log('Asignación automática:', automatico);
 
-    if (!this.muelleCD || this.muelleCD < 1) {
-      console.warn('Muelle inválido:', this.muelleCD);
+    if (!automatico && (!this.muelleSeleccionado || this.muelleSeleccionado < 1)) {
+      console.warn('Muelle inválido:', this.muelleSeleccionado);
       this.notificationService.agregarNotificacion(
-        'Debe ingresar un número de muelle válido (mayor a 0)',
+        'Debe seleccionar un muelle válido',
         ticket.id,
         'warning'
       );
@@ -346,15 +355,26 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
 
     this.cargando = true;
     try {
-      console.log('Llamando a supabaseService.asignarMuelleCD con muelle:', this.muelleCD);
-      await this.supabaseService.asignarMuelleCD(ticket.id, this.muelleCD);
-      console.log('✅ Muelle asignado exitosamente');
-
-      this.notificationService.agregarNotificacion(
-        `Muelle CD ${this.muelleCD} asignado al ticket #${ticket.id}`,
-        ticket.id,
-        'success'
-      );
+      if (automatico) {
+        console.log('Asignando muelle automáticamente...');
+        await this.supabaseService.asignarMuelleAutomatico(ticket.id);
+        console.log('✅ Muelle asignado automáticamente');
+        this.notificationService.agregarNotificacion(
+          `Muelle asignado automáticamente al ticket #${ticket.id}`,
+          ticket.id,
+          'success'
+        );
+      } else {
+        console.log('Asignando muelle manual:', this.muelleSeleccionado);
+        await this.supabaseService.asignarMuelleATicket(ticket.id, this.muelleSeleccionado!);
+        const muelleAsignado = this.muelles.find(m => m.id === this.muelleSeleccionado);
+        console.log('✅ Muelle asignado exitosamente');
+        this.notificationService.agregarNotificacion(
+          `${muelleAsignado?.nombre || 'Muelle'} asignado al ticket #${ticket.id}`,
+          ticket.id,
+          'success'
+        );
+      }
 
       console.log('Recargando datos...');
       await this.cargarDatos();
@@ -365,7 +385,7 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
       console.error('Mensaje:', error.message);
       console.error('Detalles:', error);
       this.notificationService.agregarNotificacion(
-        `Error al asignar muelle CD: ${error.message || 'Error desconocido'}`,
+        `Error al asignar muelle: ${error.message || 'Error desconocido'}`,
         ticket.id,
         'error'
       );
@@ -544,12 +564,14 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
 
   abrirModalAsignarMuelle(ticket: Ticket): void {
     this.ticketSeleccionado = ticket;
+    this.muelleSeleccionado = null;
     this.muelleCD = null;
     this.modalActivo = 'muelle';
   }
 
   cerrarModalAsignarMuelle(): void {
     this.ticketSeleccionado = null;
+    this.muelleSeleccionado = null;
     this.muelleCD = null;
     this.modalActivo = null;
   }

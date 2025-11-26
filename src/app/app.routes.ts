@@ -4,8 +4,10 @@ import { DashboardPlantaComponent } from './components/dashboard-planta/dashboar
 import { DashboardCdComponent } from './components/dashboard-cd/dashboard-cd.component';
 import { DashboardGalponComponent } from './components/dashboard-galpon/dashboard-galpon.component';
 import { MonitorRamplasComponent } from './components/monitor-ramplas/monitor-ramplas.component';
+import { MonitorMuellesComponent } from './components/monitor-muelles/monitor-muelles.component';
 import { DetalleTicketComponent } from './components/detalle-ticket/detalle-ticket.component';
 import { NotificacionesComponent } from './components/notificaciones/notificaciones.component';
+import { GestionMuellesComponent } from './components/gestion-muelles/gestion-muelles.component';
 import { AuthGuard } from './guards/auth.guard';
 import { DashboardAdminComponent } from './components/dashboard-admin/dashboard-admin.component';
 
@@ -45,6 +47,11 @@ export const routes: Routes = [
         canActivate: [AuthGuard]
     },
     {
+        path: 'monitor-muelles',
+        component: MonitorMuellesComponent,
+        canActivate: [AuthGuard]
+    },
+    {
         path: 'detalle-ticket/:id',
         component: DetalleTicketComponent,
         canActivate: [AuthGuard]
@@ -52,6 +59,11 @@ export const routes: Routes = [
     {
         path: 'notificaciones',
         component: NotificacionesComponent,
+        canActivate: [AuthGuard]
+    },
+    {
+        path: 'gestion-muelles',
+        component: GestionMuellesComponent,
         canActivate: [AuthGuard]
     },
     {

@@ -335,7 +335,10 @@
               <ng-container matColumnDef="muelleCD">
                 <th mat-header-cell *matHeaderCellDef>Muelle CD</th>
                 <td mat-cell *matCellDef="let ticket">
-                  {{ ticket.muelle_cd_asignado || '-' }}
+                  <span *ngIf="ticket.muelle_asignado" class="badge badge-success">
+                    {{ ticket.muelle_asignado.nombre }}
+                  </span>
+                  <span *ngIf="!ticket.muelle_asignado">-</span>
                 </td>
               </ng-container>
 
@@ -436,26 +439,31 @@
     <div class="ticket-summary">
       <p><strong>Rampla:</strong> {{ ticketSeleccionado.rampla_asignada?.nombre || 'No asignada' }}</p>
       <p><strong>Estado:</strong> {{ ticketSeleccionado.estado_actual }}</p>
+      <p><strong>Muelles Libres:</strong> {{ muellesLibres.length }}</p>
     </div>
 
+
+    <!-- Selección Manual de Muelle -->
+    <h3>O seleccione un muelle específico:</h3>
+    
     <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Número de Muelle CD</mat-label>
-      <input matInput 
-             type="number" 
-             [(ngModel)]="muelleCD"
-             placeholder="Ej: 1, 2, 3..."
-             min="1">
-      <mat-hint>Ingrese el número del muelle donde se descargará</mat-hint>
+      <mat-label>Seleccionar Muelle</mat-label>
+      <mat-select [(ngModel)]="muelleSeleccionado">
+        <mat-option *ngFor="let muelle of muellesLibres" [value]="muelle.id">
+          {{ muelle.nombre }} - {{ muelle.estado }}
+        </mat-option>
+      </mat-select>
+      <mat-hint>Seleccione el muelle donde se descargará</mat-hint>
     </mat-form-field>
 
     <div class="modal-actions">
       <button mat-button (click)="cerrarModalAsignarMuelle()">Cancelar</button>
       <button mat-raised-button 
               color="primary"
-              (click)="asignarMuelleCD(ticketSeleccionado)"
-              [disabled]="!muelleCD || cargando">
+              (click)="asignarMuelleCD(ticketSeleccionado, false)"
+              [disabled]="!muelleSeleccionado || cargando">
         <mat-icon>assignment</mat-icon>
-        Confirmar Asignación
+        Confirmar Asignación Manual
       </button>
     </div>
   </div>
@@ -620,6 +628,15 @@
   padding: 15px;
   border-radius: 4px;
   margin: 20px 0;
+}
+
+.auto-assign-section {
+  margin: 16px 0;
+  text-align: center;
+}
+
+.auto-assign-section button {
+  width: 100%;
 }
 
 .modal-actions {

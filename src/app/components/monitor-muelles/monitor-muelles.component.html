@@ -1,0 +1,129 @@
+<app-navbar></app-navbar>
+
+<div class="container">
+  <mat-card class="main-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>warehouse</mat-icon>
+        Monitor de Muelles
+      </mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+      <!-- Barra de estadísticas -->
+      <div class="stats-bar">
+        <div class="stats">
+          <mat-chip class="chip-info">
+            Total: {{ muelles.length }}
+          </mat-chip>
+          <mat-chip class="chip-success">
+            Libres: {{ muellesLibresCount }}
+          </mat-chip>
+          <mat-chip class="chip-warning">
+            Ocupados: {{ muellesOcupadosCount }}
+          </mat-chip>
+        </div>
+      </div>
+
+      <!-- Filtros -->
+      <div class="filters">
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Buscar muelle</mat-label>
+          <input matInput [(ngModel)]="filtroBusqueda" (ngModelChange)="aplicarFiltros()" placeholder="Nombre del muelle">
+          <mat-icon matPrefix>search</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Estado</mat-label>
+          <select matNativeControl [(ngModel)]="filtroEstado" (ngModelChange)="aplicarFiltros()">
+            <option value="todos">Todos</option>
+            <option value="activo">Activos</option>
+            <option value="inactivo">Inactivos</option>
+          </select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Disponibilidad</mat-label>
+          <select matNativeControl [(ngModel)]="filtroDisponibilidad" (ngModelChange)="aplicarFiltros()">
+            <option value="todos">Todos</option>
+            <option value="Libre">Libres</option>
+            <option value="Ocupado">Ocupados</option>
+          </select>
+        </mat-form-field>
+      </div>
+
+      <!-- Tabla de muelles -->
+      <div class="table-container">
+        <table mat-table [dataSource]="muellesFiltrados" class="muelles-table">
+          <!-- Columna ID -->
+          <ng-container matColumnDef="id">
+            <th mat-header-cell *matHeaderCellDef>ID</th>
+            <td mat-cell *matCellDef="let muelle">{{ muelle.id }}</td>
+          </ng-container>
+
+          <!-- Columna Nombre -->
+          <ng-container matColumnDef="nombre">
+            <th mat-header-cell *matHeaderCellDef>Nombre</th>
+            <td mat-cell *matCellDef="let muelle">
+              <strong>{{ muelle.nombre }}</strong>
+            </td>
+          </ng-container>
+
+          <!-- Columna Estado -->
+          <ng-container matColumnDef="estado">
+            <th mat-header-cell *matHeaderCellDef>Estado</th>
+            <td mat-cell *matCellDef="let muelle">
+              <mat-chip [class]="getEstadoChipClass(muelle.estado)">
+                <mat-icon *ngIf="muelle.estado === 'Libre'">check_circle</mat-icon>
+                <mat-icon *ngIf="muelle.estado === 'Ocupado'">schedule</mat-icon>
+                {{ muelle.estado }}
+              </mat-chip>
+            </td>
+          </ng-container>
+
+          <!-- Columna Ticket y Rampla Actual -->
+          <ng-container matColumnDef="rampla_actual">
+            <th mat-header-cell *matHeaderCellDef>Ticket / Rampla</th>
+            <td mat-cell *matCellDef="let muelle">
+              <div *ngIf="muelle.ticket_actual" class="ticket-info">
+                <span class="ticket-badge">
+                  Ticket #{{ muelle.ticket_actual.id }}
+                </span>
+                <span *ngIf="muelle.ticket_actual.rampla_asignada" class="rampla-badge">
+                  <mat-icon>local_shipping</mat-icon>
+                  {{ muelle.ticket_actual.rampla_asignada.nombre }}
+                </span>
+                <span *ngIf="!muelle.ticket_actual.rampla_asignada" class="text-muted">
+                  Sin rampla
+                </span>
+              </div>
+              <span *ngIf="!muelle.ticket_actual" class="text-muted">-</span>
+            </td>
+          </ng-container>
+
+          <!-- Columna Activo -->
+          <ng-container matColumnDef="activo">
+            <th mat-header-cell *matHeaderCellDef>Estado</th>
+            <td mat-cell *matCellDef="let muelle">
+              <span [class]="muelle.activo ? 'badge-success' : 'badge-inactive'">
+                {{ muelle.activo ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="columnas"></tr>
+          <tr mat-row *matRowDef="let row; columns: columnas;"></tr>
+        </table>
+
+        <div *ngIf="!cargando && muellesFiltrados.length === 0" class="no-data">
+          <mat-icon>inbox</mat-icon>
+          <p>No se encontraron muelles con los filtros aplicados</p>
+        </div>
+
+        <div *ngIf="cargando" class="loading">
+          <mat-spinner></mat-spinner>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

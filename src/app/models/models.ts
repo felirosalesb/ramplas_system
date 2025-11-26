@@ -13,6 +13,27 @@ export interface Rampla {
     created_at?: string;
 }
 
+export interface Muelle {
+    id: number;
+    nombre: string;
+    estado: 'Libre' | 'Ocupado';
+    ticket_actual_id: number | null;
+    activo: boolean;
+    created_at?: string;
+    updated_at?: string;
+    // Relaciones
+    ticket_actual?: {
+        id: number;
+        tipo_ticket: string;
+        estado_actual: string;
+        rampla_asignada?: {
+            id: number;
+            nombre: string;
+            tipo_rampla: string;
+        };
+    };
+}
+
 export type EstadoTicket =
     | 'Solicitud Creada'
     | 'Pendiente Asignación'
@@ -46,12 +67,14 @@ export interface Ticket {
     fecha_creacion: string;
     estado_actual: EstadoTicket;
     rampla_asignada_id: number | null;
+    muelle_asignado_id: number | null; // Nuevo: referencia al muelle en CD
     fecha_alerta_cd: string | null;
     observacion_planta: string | null;
     muelle_cd_asignado: number | null;
 
     // Relaciones
     rampla_asignada?: Rampla;
+    muelle_asignado?: Muelle; // Nuevo: relación con muelle
 }
 
 export interface Usuario {

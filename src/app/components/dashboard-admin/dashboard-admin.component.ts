@@ -12,7 +12,9 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialogModule } from '@angular/material/dialog';
+import { MatTabsModule } from '@angular/material/tabs';
 import { NavbarComponent } from '../navbar/navbar.component';
+import { GestionMuellesComponent } from '../gestion-muelles/gestion-muelles.component';
 import { SupabaseService } from '../../services/supabase.service';
 import { NotificationService } from '../../services/notification.service';
 import { Rampla, TipoRampla } from '../../models/models';
@@ -34,7 +36,9 @@ import { Rampla, TipoRampla } from '../../models/models';
     MatChipsModule,
     MatProgressSpinnerModule,
     MatDialogModule,
-    NavbarComponent
+    MatTabsModule,
+    NavbarComponent,
+    GestionMuellesComponent
   ],
   templateUrl: './dashboard-admin.component.html',
   styleUrl: './dashboard-admin.component.css'

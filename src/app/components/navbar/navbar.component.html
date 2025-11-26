@@ -12,10 +12,16 @@
         <span class="button-text">{{ dashboardLabel }}</span>
       </button>
 
-      <!-- Monitor solo para CD y Admin -->
+      <!-- Monitor de Ramplas solo para CD y Admin -->
       <button mat-button routerLink="/monitor-ramplas" routerLinkActive="active" *ngIf="mostrarMonitor">
         <mat-icon>monitor</mat-icon>
-        <span class="button-text">Monitor</span>
+        <span class="button-text">Monitor Ramplas</span>
+      </button>
+
+      <!-- Monitor de Muelles solo para CD y Admin -->
+      <button mat-button routerLink="/monitor-muelles" routerLinkActive="active" *ngIf="mostrarMonitor">
+        <mat-icon>warehouse</mat-icon>
+        <span class="button-text">Monitor Muelles</span>
       </button>
 
       <!-- Notificaciones -->

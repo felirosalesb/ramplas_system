@@ -6,6 +6,7 @@ import { environment } from '../../environments/environment';
 import {
     Ticket,
     Rampla,
+    Muelle,
     RegistroTiempo,
     CreateTicketDTO,
     AsignarRamplaDTO,
@@ -421,10 +422,10 @@ export class SupabaseService {
         console.log('👤 Usuario ID:', user.id);
         console.log('👤 Usuario rol:', userData?.rol || 'desconocido');
 
-        // Obtener el ticket para liberar la rampla
+        // Obtener el ticket para liberar la rampla Y el muelle
         const { data: ticket, error: selectError } = await this.supabase
             .from('tickets')
-            .select('rampla_asignada_id')
+            .select('rampla_asignada_id, muelle_asignado_id')
             .eq('id', ticketId)
             .single();
 
@@ -435,6 +436,7 @@ export class SupabaseService {
 
         console.log('📋 Ticket obtenido:', ticket);
         console.log('🚛 Rampla asignada ID:', ticket?.rampla_asignada_id);
+        console.log('🏢 Muelle asignado ID:', ticket?.muelle_asignado_id);
 
         // Actualizar estado del ticket a Libre
         const { error: ticketError } = await this.supabase
@@ -501,9 +503,57 @@ export class SupabaseService {
             console.warn('⚠️ No hay rampla asignada al ticket');
         }
 
+        // Liberar el muelle si está asignado
+        if (ticket?.muelle_asignado_id) {
+            console.log('🔄 === LIBERANDO MUELLE ===');
+            console.log('🔄 Muelle ID:', ticket.muelle_asignado_id);
+            
+            // Ver estado ANTES
+            const { data: muelleAntes } = await this.supabase
+                .from('muelles')
+                .select('id, nombre, estado, ticket_actual_id')
+                .eq('id', ticket.muelle_asignado_id)
+                .single();
+            console.log('📊 Muelle ANTES:', muelleAntes);
+
+            const { data: resultUpdateMuelle, error: muelleError } = await this.supabase
+                .from('muelles')
+                .update({
+                    estado: 'Libre',
+                    ticket_actual_id: null
+                })
+                .eq('id', ticket.muelle_asignado_id)
+                .select();
+
+            console.log('📝 Resultado UPDATE muelle:', resultUpdateMuelle);
+
+            if (muelleError) {
+                console.error('❌ Error al liberar muelle:', muelleError);
+                console.error('❌ Código:', muelleError.code);
+                console.error('❌ Mensaje:', muelleError.message);
+                throw muelleError;
+            }
+            
+            // Ver estado DESPUÉS
+            const { data: muelleDespues } = await this.supabase
+                .from('muelles')
+                .select('id, nombre, estado, ticket_actual_id')
+                .eq('id', ticket.muelle_asignado_id)
+                .single();
+            console.log('📊 Muelle DESPUÉS:', muelleDespues);
+            
+            if (muelleDespues?.estado === 'Libre') {
+                console.log('✅✅✅ MUELLE LIBERADO EXITOSAMENTE');
+            } else {
+                console.error('❌❌❌ FALLO: Muelle NO se liberó. Estado actual:', muelleDespues?.estado);
+            }
+        } else {
+            console.warn('⚠️ No hay muelle asignado al ticket');
+        }
+
         await this.registrarTiempo(ticketId, 'Fin Descarga', user.id);
         await this.registrarTiempo(ticketId, 'Libre', user.id);
-        console.log('✅ Descarga finalizada y ticket liberado correctamente');
+        console.log('✅ Descarga finalizada, ticket liberado, rampla y muelle liberados');
         console.log('=== FIN FINALIZAR DESCARGA ===');
     }
 
@@ -726,7 +776,8 @@ export class SupabaseService {
             .from('tickets')
             .select(`
                 *,
-                rampla_asignada:ramplas!rampla_asignada_id(*)
+                rampla_asignada:ramplas!rampla_asignada_id(*),
+                muelle_asignado:muelles!muelle_asignado_id(*)
             `)
             .eq('id', ticketId)
             .single();
@@ -740,7 +791,8 @@ export class SupabaseService {
             .from('tickets')
             .select(`
                 *,
-                rampla_asignada:ramplas!rampla_asignada_id(*)
+                rampla_asignada:ramplas!rampla_asignada_id(*),
+                muelle_asignado:muelles!muelle_asignado_id(*)
             `)
             .or(`planta_user_id.eq.${userId},cd_user_id.eq.${userId}`)
             .order('fecha_creacion', { ascending: false });
@@ -779,7 +831,11 @@ export class SupabaseService {
         console.log('Consultando tickets activos...');
         const { data, error } = await this.supabase
             .from('tickets')
-            .select('*')
+            .select(`
+                *,
+                rampla_asignada:ramplas!rampla_asignada_id(*),
+                muelle_asignado:muelles!muelle_asignado_id(*)
+            `)
             .neq('estado_actual', 'Libre')
             .order('fecha_creacion', { ascending: false });
 
@@ -1034,6 +1090,309 @@ export class SupabaseService {
                     console.error('❌ Error en canal de ramplas');
                 } else if (status === 'TIMED_OUT') {
                     console.error('⏱️ Timeout en suscripción de ramplas');
+                }
+            });
+    }
+
+    // ==================== GESTIÓN DE MUELLES ====================
+
+    async getMuelles(): Promise<Muelle[]> {
+        console.log('Obteniendo muelles con información de tickets y ramplas...');
+        
+        const { data, error } = await this.supabase
+            .from('muelles')
+            .select(`
+                *,
+                ticket_actual:tickets!ticket_actual_id(
+                    id,
+                    tipo_ticket,
+                    estado_actual,
+                    rampla_asignada:ramplas!rampla_asignada_id(
+                        id,
+                        nombre,
+                        tipo_rampla
+                    )
+                )
+            `)
+            .order('id', { ascending: true });
+
+        if (error) {
+            console.error('Error al obtener muelles:', error);
+            throw error;
+        }
+
+        console.log('Muelles obtenidos con relaciones:', data?.length);
+        return data || [];
+    }
+
+    async getMuelleById(id: number): Promise<Muelle | null> {
+        const { data, error } = await this.supabase
+            .from('muelles')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async getMuellesLibres(): Promise<Muelle[]> {
+        console.log('Obteniendo muelles libres...');
+        
+        const { data, error } = await this.supabase
+            .from('muelles')
+            .select('*')
+            .eq('estado', 'Libre')
+            .eq('activo', true)
+            .order('id', { ascending: true });
+
+        if (error) {
+            console.error('Error al obtener muelles libres:', error);
+            throw error;
+        }
+
+        console.log('Muelles libres encontrados:', data?.length);
+        return data || [];
+    }
+
+    async crearMuelle(muelle: { nombre: string; activo: boolean }): Promise<Muelle> {
+        const user = this.getCurrentUser();
+        if (!user) throw new Error('Usuario no autenticado');
+
+        console.log('Creando muelle:', muelle);
+
+        const { data, error } = await this.supabase
+            .from('muelles')
+            .insert({
+                nombre: muelle.nombre,
+                activo: muelle.activo,
+                estado: 'Libre'
+            })
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error al crear muelle:', error);
+            if (error.code === '23505') {
+                throw new Error('Ya existe un muelle con ese nombre');
+            }
+            throw error;
+        }
+
+        console.log('Muelle creado:', data);
+        return data;
+    }
+
+    async actualizarMuelle(id: number, muelle: { nombre: string; activo: boolean }): Promise<void> {
+        const user = this.getCurrentUser();
+        if (!user) throw new Error('Usuario no autenticado');
+
+        console.log('Actualizando muelle:', id, muelle);
+
+        const { error } = await this.supabase
+            .from('muelles')
+            .update({
+                nombre: muelle.nombre,
+                activo: muelle.activo,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error al actualizar muelle:', error);
+            if (error.code === '23505') {
+                throw new Error('Ya existe un muelle con ese nombre');
+            }
+            throw error;
+        }
+
+        console.log('Muelle actualizado correctamente');
+    }
+
+    async cambiarEstadoActivoMuelle(id: number, activo: boolean): Promise<void> {
+        const user = this.getCurrentUser();
+        if (!user) throw new Error('Usuario no autenticado');
+
+        console.log('Cambiando estado activo de muelle:', id, activo);
+
+        // Verificar que el muelle no esté ocupado antes de desactivar
+        if (!activo) {
+            const { data: muelle } = await this.supabase
+                .from('muelles')
+                .select('estado')
+                .eq('id', id)
+                .single();
+
+            if (muelle?.estado === 'Ocupado') {
+                throw new Error('No se puede desactivar un muelle ocupado');
+            }
+        }
+
+        const { error } = await this.supabase
+            .from('muelles')
+            .update({
+                activo: activo,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error al cambiar estado activo de muelle:', error);
+            throw error;
+        }
+
+        console.log('Estado activo de muelle cambiado correctamente');
+    }
+
+    async eliminarMuelle(id: number): Promise<void> {
+        const user = this.getCurrentUser();
+        if (!user) throw new Error('Usuario no autenticado');
+
+        console.log('Eliminando muelle:', id);
+
+        // Verificar que el muelle esté libre antes de eliminar
+        const { data: muelle } = await this.supabase
+            .from('muelles')
+            .select('estado')
+            .eq('id', id)
+            .single();
+
+        if (muelle?.estado === 'Ocupado') {
+            throw new Error('No se puede eliminar un muelle que está ocupado');
+        }
+
+        const { error } = await this.supabase
+            .from('muelles')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error al eliminar muelle:', error);
+            throw error;
+        }
+
+        console.log('Muelle eliminado correctamente');
+    }
+
+    async asignarMuelleATicket(ticketId: number, muelleId: number): Promise<void> {
+        const user = this.getCurrentUser();
+        if (!user) throw new Error('Usuario no autenticado');
+
+        console.log('🏢 Asignando muelle', muelleId, 'al ticket', ticketId);
+
+        // Verificar que el muelle esté libre
+        const { data: muelle, error: muelleError } = await this.supabase
+            .from('muelles')
+            .select('estado')
+            .eq('id', muelleId)
+            .single();
+
+        if (muelleError) {
+            console.error('Error al verificar muelle:', muelleError);
+            throw muelleError;
+        }
+
+        if (muelle?.estado !== 'Libre') {
+            throw new Error('El muelle seleccionado no está disponible');
+        }
+
+        // Actualizar el muelle a Ocupado
+        const { error: updateMuelleError } = await this.supabase
+            .from('muelles')
+            .update({
+                estado: 'Ocupado',
+                ticket_actual_id: ticketId
+            })
+            .eq('id', muelleId);
+
+        if (updateMuelleError) {
+            console.error('Error al actualizar muelle:', updateMuelleError);
+            throw updateMuelleError;
+        }
+
+        // Actualizar el ticket con el muelle asignado
+        const { error: updateTicketError } = await this.supabase
+            .from('tickets')
+            .update({
+                muelle_asignado_id: muelleId,
+                estado_actual: 'Asignada a Muelle CD'
+            })
+            .eq('id', ticketId);
+
+        if (updateTicketError) {
+            console.error('Error al actualizar ticket con muelle:', updateTicketError);
+            throw updateTicketError;
+        }
+
+        await this.registrarTiempo(ticketId, 'Asignada a Muelle CD', user.id);
+        console.log('✅ Muelle asignado exitosamente');
+    }
+
+    async asignarMuelleAutomatico(ticketId: number): Promise<Muelle> {
+        const user = this.getCurrentUser();
+        if (!user) throw new Error('Usuario no autenticado');
+
+        console.log('🤖 Asignando muelle automáticamente al ticket', ticketId);
+
+        // Obtener el primer muelle libre
+        const muellesLibres = await this.getMuellesLibres();
+
+        if (muellesLibres.length === 0) {
+            throw new Error('No hay muelles disponibles en este momento');
+        }
+
+        const muelleAsignado = muellesLibres[0];
+        console.log('Muelle seleccionado automáticamente:', muelleAsignado.nombre);
+
+        // Asignar el muelle
+        await this.asignarMuelleATicket(ticketId, muelleAsignado.id);
+
+        return muelleAsignado;
+    }
+
+    async liberarMuelle(muelleId: number): Promise<void> {
+        const user = this.getCurrentUser();
+        if (!user) throw new Error('Usuario no autenticado');
+
+        console.log('🔓 Liberando muelle:', muelleId);
+
+        const { error } = await this.supabase
+            .from('muelles')
+            .update({
+                estado: 'Libre',
+                ticket_actual_id: null
+            })
+            .eq('id', muelleId);
+
+        if (error) {
+            console.error('Error al liberar muelle:', error);
+            throw error;
+        }
+
+        console.log('✅ Muelle liberado correctamente');
+    }
+
+    subscribeToMuelles(callback: (payload: any) => void) {
+        console.log('📡 Iniciando suscripción Realtime a tabla muelles...');
+
+        return this.supabase
+            .channel('muelles-channel')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'muelles' },
+                (payload) => {
+                    console.log('✅ Evento Realtime recibido en muelles:', payload.eventType);
+                    callback(payload);
+                }
+            )
+            .subscribe((status) => {
+                console.log('📡 Estado de suscripción muelles:', status);
+                if (status === 'SUBSCRIBED') {
+                    console.log('✅ Suscripción a muelles exitosa');
+                } else if (status === 'CHANNEL_ERROR') {
+                    console.error('❌ Error en canal de muelles');
+                } else if (status === 'TIMED_OUT') {
+                    console.error('⏱️ Timeout en suscripción de muelles');
                 }
             });
     }
