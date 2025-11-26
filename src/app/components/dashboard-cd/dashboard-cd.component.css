@@ -432,7 +432,7 @@
 
 /* Color para stat-card planta */
 .stat-card.planta {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #ffeff0;
 }
 
 /* ============================================ */
@@ -558,7 +558,8 @@
         font-size: 13px;
     }
 
-    th, td {
+    th,
+    td {
         padding: 8px 4px;
     }
 

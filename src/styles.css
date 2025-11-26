@@ -26,6 +26,7 @@ body {
 
 /* Mejorar usabilidad en móviles */
 @media (max-width: 768px) {
+
     /* Botones más grandes para tocar fácil */
     button {
         min-height: 44px !important;
@@ -62,6 +63,7 @@ body {
 
 /* Smartphones en vertical */
 @media (max-width: 480px) {
+
     /* Font sizes ajustados */
     body {
         font-size: 14px;
@@ -90,7 +92,8 @@ body {
     input,
     textarea,
     select {
-        font-size: 16px !important; /* Evita zoom en iOS */
+        font-size: 16px !important;
+        /* Evita zoom en iOS */
     }
 
     /* Modales full screen */
