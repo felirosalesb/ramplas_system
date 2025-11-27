@@ -44,6 +44,9 @@ export class DashboardGalponComponent implements OnInit, OnDestroy {
   ) { }
 
   async ngOnInit(): Promise<void> {
+    // Configurar rol de usuario para filtrado de notificaciones
+    this.notificationService.setRolUsuario('galpon');
+    
     await this.cargarTickets();
     this.iniciarRealtimeSubscriptions();
   }

@@ -77,12 +77,15 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
   }
 
   async ngOnInit(): Promise<void> {
+    // Configurar rol de usuario para filtrado de notificaciones
+    this.notificationService.setRolUsuario('planta');
+    
     await this.cargarMisTickets();
     this.iniciarRealtimeSubscriptions();
 
-    // Suscribirse a notificaciones
+    // Suscribirse a notificaciones filtradas por rol
     this.subscriptions.push(
-      this.notificationService.notificaciones$.subscribe()
+      this.notificationService.getNotificacionesPorRol().subscribe()
     );
   }
 

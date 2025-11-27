@@ -2,9 +2,13 @@
 import { Injectable } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 import { NotificacionConfig } from '../models/models';
+
+export type RolUsuario = 'planta' | 'cd' | 'admin' | 'galpon';
+export type PrioridadNotificacion = 'baja' | 'media' | 'alta' | 'critica';
 
 export interface PopupNotification {
     id: string;
@@ -13,6 +17,13 @@ export interface PopupNotification {
     timestamp: Date;
     leido: boolean;
     tipo: 'info' | 'warning' | 'success' | 'error';
+    prioridad: PrioridadNotificacion;
+    rolesDestino: RolUsuario[]; // Roles que deben ver esta notificación
+    icono?: string; // Ícono Material para mostrar
+    accion?: {
+        texto: string;
+        url: string;
+    };
 }
 
 @Injectable({
@@ -21,6 +32,9 @@ export interface PopupNotification {
 export class NotificationService {
     private notificacionesSubject = new BehaviorSubject<PopupNotification[]>([]);
     public notificaciones$ = this.notificacionesSubject.asObservable();
+    
+    private notificacionesHabilitadas = false;
+    private rolUsuarioActual: RolUsuario | null = null;
 
     // Webhook de Microsoft Teams (configurar en environment)
     private teamsWebhookUrl = '';
@@ -31,6 +45,34 @@ export class NotificationService {
         private http: HttpClient
     ) {
         this.cargarNotificacionesGuardadas();
+        this.solicitarPermisoNotificaciones();
+    }
+
+    // ==================== CONFIGURACIÓN ====================
+
+    setRolUsuario(rol: RolUsuario): void {
+        this.rolUsuarioActual = rol;
+        console.log('📋 Rol de usuario configurado:', rol);
+    }
+
+    async solicitarPermisoNotificaciones(): Promise<boolean> {
+        if (!('Notification' in window)) {
+            console.warn('Este navegador no soporta notificaciones de escritorio');
+            return false;
+        }
+
+        if (Notification.permission === 'granted') {
+            this.notificacionesHabilitadas = true;
+            return true;
+        }
+
+        if (Notification.permission !== 'denied') {
+            const permission = await Notification.requestPermission();
+            this.notificacionesHabilitadas = permission === 'granted';
+            return this.notificacionesHabilitadas;
+        }
+
+        return false;
     }
 
     // ==================== NOTIFICACIONES POPUP ====================
@@ -38,8 +80,18 @@ export class NotificationService {
     agregarNotificacion(
         mensaje: string,
         ticketId: number,
-        tipo: 'info' | 'warning' | 'success' | 'error' = 'info'
+        tipo: 'info' | 'warning' | 'success' | 'error' = 'info',
+        prioridad: PrioridadNotificacion = 'media',
+        rolesDestino: RolUsuario[] = ['planta', 'cd', 'admin', 'galpon'],
+        icono?: string,
+        accion?: { texto: string; url: string }
     ): void {
+        // Filtrar por rol si está configurado
+        if (this.rolUsuarioActual && !rolesDestino.includes(this.rolUsuarioActual)) {
+            console.log('🚫 Notificación filtrada - No aplica para rol:', this.rolUsuarioActual);
+            return;
+        }
+
         const notificaciones = this.notificacionesSubject.value;
         const nueva: PopupNotification = {
             id: `${Date.now()}-${ticketId}`,
@@ -47,18 +99,28 @@ export class NotificationService {
             ticket_id: ticketId,
             timestamp: new Date(),
             leido: false,
-            tipo
+            tipo,
+            prioridad,
+            rolesDestino,
+            icono,
+            accion
         };
 
         notificaciones.unshift(nueva);
         this.notificacionesSubject.next(notificaciones);
         this.guardarNotificaciones();
 
-        // Mostrar snackbar
-        this.mostrarSnackbar(mensaje, tipo);
+        // Mostrar snackbar con duración según prioridad
+        const duracion = this.getDuracionPorPrioridad(prioridad);
+        this.mostrarSnackbar(mensaje, tipo, duracion);
 
-        // Reproducir sonido (opcional)
-        this.reproducirSonido();
+        // Mostrar notificación nativa del navegador
+        if (prioridad === 'alta' || prioridad === 'critica') {
+            this.mostrarNotificacionNativa(mensaje, tipo, ticketId, accion);
+        }
+
+        // Reproducir sonido según prioridad
+        this.reproducirSonido(prioridad);
     }
 
     marcarComoLeida(notificacionId: string): void {
@@ -89,19 +151,90 @@ export class NotificationService {
         return this.notificacionesSubject.value.filter(n => !n.leido).length;
     }
 
-    private mostrarSnackbar(mensaje: string, tipo: string): void {
+    getNotificacionesPorRol(): Observable<PopupNotification[]> {
+        return this.notificaciones$.pipe(
+            map((notificaciones: PopupNotification[]) =>
+                notificaciones.filter((n: PopupNotification) =>
+                    !this.rolUsuarioActual || n.rolesDestino?.includes(this.rolUsuarioActual)
+                )
+            )
+        );
+    }
+
+    // ==================== NOTIFICACIONES NATIVAS ====================
+
+    private mostrarNotificacionNativa(
+        mensaje: string,
+        tipo: 'info' | 'warning' | 'success' | 'error',
+        ticketId: number,
+        accion?: { texto: string; url: string }
+    ): void {
+        if (!this.notificacionesHabilitadas || Notification.permission !== 'granted') {
+            return;
+        }
+
+        const iconos = {
+            success: '✅',
+            warning: '⚠️',
+            error: '❌',
+            info: 'ℹ️'
+        };
+
+        const titulo = `${iconos[tipo]} Sistema de Ramplas`;
+        
+        const notification = new Notification(titulo, {
+            body: mensaje,
+            icon: '/favicon.ico',
+            badge: '/favicon.ico',
+            tag: `ticket-${ticketId}`,
+            requireInteraction: tipo === 'error' || tipo === 'warning',
+            silent: false
+        });
+
+        notification.onclick = () => {
+            window.focus();
+            if (accion?.url) {
+                window.location.href = accion.url;
+            }
+            notification.close();
+        };
+
+        // Auto-cerrar después de 10 segundos si no es crítico
+        if (tipo !== 'error' && tipo !== 'warning') {
+            setTimeout(() => notification.close(), 10000);
+        }
+    }
+
+    private getDuracionPorPrioridad(prioridad: PrioridadNotificacion): number {
+        const duraciones = {
+            critica: 0, // No se cierra automáticamente
+            alta: 10000,
+            media: 5000,
+            baja: 3000
+        };
+        return duraciones[prioridad];
+    }
+
+    private mostrarSnackbar(mensaje: string, tipo: string, duracion: number = 5000): void {
         this.snackBar.open(mensaje, 'Cerrar', {
-            duration: 5000,
+            duration: duracion,
             horizontalPosition: 'end',
             verticalPosition: 'top',
             panelClass: [`snackbar-${tipo}`]
         });
     }
 
-    private reproducirSonido(): void {
-        // Opcional: reproducir sonido de notificación
-        const audio = new Audio('assets/sounds/notification.mp3');
-        audio.volume = 0.3;
+    private reproducirSonido(prioridad: PrioridadNotificacion = 'media'): void {
+        // Sonidos diferentes según prioridad
+        const sonidos = {
+            critica: 'assets/sounds/notification-critica.mp3',
+            alta: 'assets/sounds/notification-alta.mp3',
+            media: 'assets/sounds/notification.mp3',
+            baja: 'assets/sounds/notification.mp3'
+        };
+
+        const audio = new Audio(sonidos[prioridad]);
+        audio.volume = prioridad === 'critica' ? 0.7 : prioridad === 'alta' ? 0.5 : 0.3;
         audio.play().catch(() => {
             // Ignorar si el navegador bloquea el sonido
         });
@@ -169,7 +302,15 @@ export class NotificationService {
 
     notificarNuevaSolicitud(ticketId: number, muellePlanta: number): void {
         const mensaje = `Nueva solicitud de retiro desde Muelle ${muellePlanta}`;
-        this.agregarNotificacion(mensaje, ticketId, 'info');
+        this.agregarNotificacion(
+            mensaje,
+            ticketId,
+            'info',
+            'alta',
+            ['cd', 'admin'], // Solo para CD y Admin
+            '🚨',
+            { texto: 'Ver Ticket', url: `/tickets/${ticketId}` }
+        );
         this.enviarNotificacionTeams(
             '🚨 Nueva Solicitud de Retiro',
             mensaje,
@@ -179,7 +320,15 @@ export class NotificationService {
 
     notificarRamplaAsignada(ticketId: number, ramplaNombre: string): void {
         const mensaje = `Rampla ${ramplaNombre} asignada a tu solicitud`;
-        this.agregarNotificacion(mensaje, ticketId, 'success');
+        this.agregarNotificacion(
+            mensaje,
+            ticketId,
+            'success',
+            'media',
+            ['planta', 'admin'], // Solo para Planta y Admin
+            '✅',
+            { texto: 'Ver Ticket', url: `/tickets/${ticketId}` }
+        );
         this.enviarNotificacionTeams(
             '✅ Rampla en Tránsito',
             mensaje,
@@ -189,7 +338,15 @@ export class NotificationService {
 
     notificarFinCarga(ticketId: number, ramplaNombre: string): void {
         const mensaje = `Carga finalizada en ${ramplaNombre} - Ticket #${ticketId}`;
-        this.agregarNotificacion(mensaje, ticketId, 'success');
+        this.agregarNotificacion(
+            mensaje,
+            ticketId,
+            'success',
+            'media',
+            ['planta', 'cd', 'admin'], // Para Planta, CD y Admin
+            '📦',
+            { texto: 'Ver Ticket', url: `/tickets/${ticketId}` }
+        );
         this.enviarNotificacionTeams(
             '📦 Carga Finalizada',
             mensaje,
@@ -199,7 +356,15 @@ export class NotificationService {
 
     notificarAlertaPendiente(ticketId: number): void {
         const mensaje = `⚠️ URGENTE: Solicitud #${ticketId} lleva más de 2 horas sin asignar rampla`;
-        this.agregarNotificacion(mensaje, ticketId, 'warning');
+        this.agregarNotificacion(
+            mensaje,
+            ticketId,
+            'warning',
+            'critica',
+            ['cd', 'admin'], // Solo para CD y Admin (crítico)
+            '⚠️',
+            { texto: 'Asignar Ahora', url: `/tickets/${ticketId}` }
+        );
         this.enviarNotificacionTeams(
             '⏰ Alerta de Tiempo',
             mensaje,
@@ -209,7 +374,15 @@ export class NotificationService {
 
     notificarRechazo(ticketId: number, observacion?: string): void {
         const mensaje = `Rampla rechazada para Ticket #${ticketId}${observacion ? ': ' + observacion : ''}`;
-        this.agregarNotificacion(mensaje, ticketId, 'error');
+        this.agregarNotificacion(
+            mensaje,
+            ticketId,
+            'error',
+            'alta',
+            ['planta', 'cd', 'admin'], // Para todos los roles relevantes
+            '❌',
+            { texto: 'Ver Detalles', url: `/tickets/${ticketId}` }
+        );
         this.enviarNotificacionTeams(
             '❌ Rampla Rechazada',
             mensaje,

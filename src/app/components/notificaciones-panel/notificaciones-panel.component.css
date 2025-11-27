@@ -1,0 +1,339 @@
+/* src/app/components/notificaciones-panel/notificaciones-panel.component.css */
+
+.notificaciones-container {
+  position: fixed;
+  z-index: 9999;
+}
+
+/* ==================== BOTÓN FLOTANTE ==================== */
+
+.notif-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10000;
+}
+
+.notif-fab:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 30px rgba(102, 126, 234, 0.6);
+}
+
+.notif-fab.pulse {
+  animation: pulse-animation 2s infinite;
+}
+
+@keyframes pulse-animation {
+  0%, 100% {
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  }
+  50% {
+    box-shadow: 0 6px 30px rgba(102, 126, 234, 0.8);
+    transform: scale(1.05);
+  }
+}
+
+/* ==================== PANEL DESLIZANTE ==================== */
+
+.notif-panel {
+  position: fixed;
+  top: 0;
+  right: -450px;
+  width: 450px;
+  height: 100vh;
+  background: white;
+  box-shadow: -4px 0 30px rgba(0, 0, 0, 0.15);
+  transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 9998;
+  display: flex;
+  flex-direction: column;
+}
+
+.notif-panel.show {
+  right: 0;
+}
+
+/* ==================== HEADER ==================== */
+
+.notif-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.notif-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.notif-title h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.notif-title mat-icon {
+  font-size: 28px;
+  width: 28px;
+  height: 28px;
+}
+
+.badge-count {
+  background: rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.notif-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.notif-actions button {
+  color: white;
+}
+
+/* ==================== LISTA ==================== */
+
+.notif-lista {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.notif-vacia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #999;
+  gap: 12px;
+}
+
+.notif-vacia mat-icon {
+  font-size: 64px;
+  width: 64px;
+  height: 64px;
+  opacity: 0.3;
+}
+
+/* ==================== ITEM ==================== */
+
+.notif-item {
+  position: relative;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.notif-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.notif-item.no-leida {
+  background: #f8f9ff;
+  border-left: 4px solid #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+}
+
+/* Indicador de prioridad */
+.notif-indicador {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4px;
+  height: 100%;
+}
+
+.prioridad-baja .notif-indicador {
+  background: #2196F3;
+}
+
+.prioridad-media .notif-indicador {
+  background: #FFC107;
+}
+
+.prioridad-alta .notif-indicador {
+  background: #FF9800;
+  animation: pulse-bar 2s infinite;
+}
+
+.prioridad-critica .notif-indicador {
+  background: #F44336;
+  animation: pulse-bar 1s infinite;
+}
+
+@keyframes pulse-bar {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Contenido del item */
+.notif-contenido {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  padding-left: 20px;
+}
+
+.notif-icono-tipo {
+  flex-shrink: 0;
+}
+
+.icono-tipo {
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+}
+
+.icono-tipo.tipo-info {
+  color: #2196F3;
+}
+
+.icono-tipo.tipo-success {
+  color: #4CAF50;
+}
+
+.icono-tipo.tipo-warning {
+  color: #FF9800;
+}
+
+.icono-tipo.tipo-error {
+  color: #F44336;
+}
+
+.notif-mensaje {
+  flex: 1;
+  min-width: 0;
+}
+
+.mensaje-texto {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333;
+  word-wrap: break-word;
+}
+
+.notif-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: #666;
+}
+
+.ticket-id {
+  font-weight: 600;
+  color: #667eea;
+}
+
+.timestamp {
+  color: #999;
+}
+
+/* Acciones */
+.notif-acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.btn-accion {
+  font-size: 12px;
+  padding: 6px 16px;
+  height: auto;
+  min-height: 32px;
+}
+
+.notif-controles {
+  display: flex;
+  gap: 4px;
+}
+
+.notif-controles button {
+  width: 32px;
+  height: 32px;
+}
+
+.notif-controles mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+/* ==================== OVERLAY ==================== */
+
+.notif-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 9997;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ==================== SCROLLBAR ==================== */
+
+.notif-lista::-webkit-scrollbar {
+  width: 8px;
+}
+
+.notif-lista::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.notif-lista::-webkit-scrollbar-thumb {
+  background: #bbb;
+  border-radius: 4px;
+}
+
+.notif-lista::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* ==================== RESPONSIVE ==================== */
+
+@media (max-width: 768px) {
+  .notif-panel {
+    width: 100%;
+    right: -100%;
+  }
+
+  .notif-fab {
+    bottom: 16px;
+    right: 16px;
+  }
+}

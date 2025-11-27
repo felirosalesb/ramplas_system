@@ -98,13 +98,16 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
   ) { }
 
   async ngOnInit(): Promise<void> {
+    // Configurar rol de usuario para filtrado de notificaciones
+    this.notificationService.setRolUsuario('cd');
+    
     await this.cargarDatos();
     this.iniciarRealtimeSubscriptions();
     this.iniciarMonitoreoAlertas();
 
-    // Suscribirse a notificaciones
+    // Suscribirse a notificaciones filtradas por rol
     this.subscriptions.push(
-      this.notificationService.notificaciones$.subscribe(notificaciones => {
+      this.notificationService.getNotificacionesPorRol().subscribe((notificaciones: any) => {
         const noLeidas = this.notificationService.getNotificacionesNoLeidas();
         this.actualizarBadgeNotificaciones(noLeidas);
       })

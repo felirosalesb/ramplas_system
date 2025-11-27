@@ -1,0 +1,121 @@
+<!-- src/app/components/notificaciones-panel/notificaciones-panel.component.html -->
+<div class="notificaciones-container">
+  <!-- Botón flotante con badge -->
+  <button 
+    mat-fab 
+    class="notif-fab"
+    [matBadge]="notificacionesNoLeidas"
+    [matBadgeHidden]="notificacionesNoLeidas === 0"
+    matBadgeColor="warn"
+    matBadgeSize="medium"
+    (click)="togglePanel()"
+    matTooltip="Notificaciones"
+    [class.pulse]="notificacionesNoLeidas > 0">
+    <mat-icon>notifications</mat-icon>
+  </button>
+
+  <!-- Panel deslizante -->
+  <div class="notif-panel" [class.show]="mostrarPanel">
+    <!-- Header -->
+    <div class="notif-header">
+      <div class="notif-title">
+        <mat-icon>notifications_active</mat-icon>
+        <h3>Notificaciones</h3>
+        <span class="badge-count" *ngIf="notificacionesNoLeidas > 0">
+          {{ notificacionesNoLeidas }}
+        </span>
+      </div>
+      <div class="notif-actions">
+        <button 
+          mat-icon-button 
+          (click)="marcarTodasLeidas()"
+          matTooltip="Marcar todas como leídas"
+          *ngIf="notificacionesNoLeidas > 0">
+          <mat-icon>done_all</mat-icon>
+        </button>
+        <button mat-icon-button (click)="togglePanel()" matTooltip="Cerrar">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Lista de notificaciones -->
+    <div class="notif-lista">
+      <div *ngIf="notificaciones.length === 0" class="notif-vacia">
+        <mat-icon>notifications_none</mat-icon>
+        <p>No hay notificaciones</p>
+      </div>
+
+      <div 
+        *ngFor="let notif of notificaciones"
+        class="notif-item"
+        [class.no-leida]="!notif.leido"
+        [ngClass]="getClasePrioridad(notif.prioridad)">
+        
+        <!-- Indicador de prioridad -->
+        <div class="notif-indicador"></div>
+
+        <!-- Contenido -->
+        <div class="notif-contenido">
+          <!-- Icono y tipo -->
+          <div class="notif-icono-tipo">
+            <mat-icon 
+              class="icono-tipo"
+              [class.tipo-info]="notif.tipo === 'info'"
+              [class.tipo-success]="notif.tipo === 'success'"
+              [class.tipo-warning]="notif.tipo === 'warning'"
+              [class.tipo-error]="notif.tipo === 'error'">
+              {{ notif.icono || getIconoTipo(notif.tipo) }}
+            </mat-icon>
+          </div>
+
+          <!-- Mensaje y detalles -->
+          <div class="notif-mensaje">
+            <p class="mensaje-texto">{{ notif.mensaje }}</p>
+            <div class="notif-meta">
+              <span class="ticket-id">Ticket #{{ notif.ticket_id }}</span>
+              <span class="timestamp">{{ getTiempoTranscurrido(notif.timestamp) }}</span>
+            </div>
+          </div>
+
+          <!-- Acciones -->
+          <div class="notif-acciones">
+            <!-- Botón de acción principal -->
+            <button 
+              *ngIf="notif.accion"
+              mat-raised-button 
+              color="primary"
+              class="btn-accion"
+              (click)="ejecutarAccion(notif)">
+              {{ notif.accion.texto }}
+            </button>
+
+            <!-- Botones de control -->
+            <div class="notif-controles">
+              <button 
+                mat-icon-button 
+                (click)="marcarComoLeida(notif)"
+                matTooltip="Marcar como leída"
+                *ngIf="!notif.leido">
+                <mat-icon>done</mat-icon>
+              </button>
+              <button 
+                mat-icon-button 
+                (click)="eliminarNotificacion(notif)"
+                matTooltip="Eliminar">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay para cerrar al hacer clic afuera -->
+  <div 
+    class="notif-overlay" 
+    *ngIf="mostrarPanel"
+    (click)="togglePanel()">
+  </div>
+</div>

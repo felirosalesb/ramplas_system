@@ -82,6 +82,9 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   private realtimeChannel: any;
 
   async ngOnInit(): Promise<void> {
+    // Configurar rol de usuario para filtrado de notificaciones
+    this.notificationService.setRolUsuario('admin');
+    
     await this.cargarRamplas();
     this.iniciarMonitoreoAlertas();
     this.iniciarRealtimeSubscriptions();
