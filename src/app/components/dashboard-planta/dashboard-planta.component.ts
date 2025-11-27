@@ -53,6 +53,11 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
   accionLlegada: 'aceptar' | 'aceptar_observacion' | 'rechazar' | null = null;
   observacionLlegada: string = '';
 
+  // Para modal de edición de ticket
+  mostrarModalEdicion = false;
+  ticketEnEdicion: Ticket | null = null;
+  nuevoMuellePlanta: number = 0;
+
   cargando = false;
   mostrarFormulario = false;
   private subscriptions: Subscription[] = [];
@@ -332,6 +337,58 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
     return ticket.estado_actual === 'Pendiente Asignación';
   }
 
+  puedeEditarTicket(ticket: Ticket): boolean {
+    // Solo se puede editar si está en Pendiente Asignación
+    return ticket.estado_actual === 'Pendiente Asignación';
+  }
+
+  abrirModalEdicion(ticket: Ticket): void {
+    this.ticketEnEdicion = ticket;
+    this.nuevoMuellePlanta = ticket.muelle_planta;
+    this.mostrarModalEdicion = true;
+  }
+
+  cerrarModalEdicion(): void {
+    this.mostrarModalEdicion = false;
+    this.ticketEnEdicion = null;
+    this.nuevoMuellePlanta = 0;
+  }
+
+  async guardarEdicionTicket(): Promise<void> {
+    if (!this.ticketEnEdicion || this.nuevoMuellePlanta < 1) {
+      alert('Debe ingresar un número de muelle válido (mayor a 0)');
+      return;
+    }
+
+    this.cargando = true;
+    try {
+      await this.supabaseService.actualizarMuellePlanta(
+        this.ticketEnEdicion.id,
+        this.nuevoMuellePlanta
+      );
+
+      this.notificationService.agregarNotificacion(
+        `Solicitud #${this.ticketEnEdicion.id} actualizada exitosamente`,
+        this.ticketEnEdicion.id,
+        'success'
+      );
+
+      this.cerrarModalEdicion();
+      await this.cargarMisTickets();
+    } catch (error: any) {
+      console.error('Error al actualizar ticket:', error);
+      const mensaje = error?.message || 'Error al actualizar el ticket';
+      this.notificationService.agregarNotificacion(
+        mensaje,
+        0,
+        'error'
+      );
+      alert(`Error al actualizar: ${mensaje}`);
+    } finally {
+      this.cargando = false;
+    }
+  }
+
   confirmarEliminarTicket(ticket: Ticket): void {
     const confirmacion = confirm(
       `¿Está seguro que desea eliminar la solicitud #${ticket.id}?\n\nEsta acción no se puede deshacer.`
@@ -372,7 +429,7 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
   }
 
   esTicketActivo(ticket: Ticket): boolean {
-    const estadosFinales = ['Libre', 'Rechazada'];
+    const estadosFinales = ['Libre', 'Rechazada', 'Cancelado por CD'];
     return !estadosFinales.includes(ticket.estado_actual);
   }
 
@@ -390,7 +447,8 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
       'Inicio Descarga': 'primary',
       'Fin Descarga': 'primary',
       'Libre': 'primary',
-      'Rechazada': 'warn'
+      'Rechazada': 'warn',
+      'Cancelado por CD': 'warn'
     };
     return colores[estado] || 'primary';
   }

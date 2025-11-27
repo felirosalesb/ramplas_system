@@ -54,7 +54,8 @@ export type EstadoTicket =
     | 'Inicio Descarga'
     | 'Fin Descarga'
     | 'Libre'
-    | 'Rechazada';
+    | 'Rechazada'
+    | 'Cancelado por CD';
 
 export interface Ticket {
     id: number;
@@ -70,6 +71,7 @@ export interface Ticket {
     muelle_asignado_id: number | null; // Nuevo: referencia al muelle en CD
     fecha_alerta_cd: string | null;
     observacion_planta: string | null;
+    observaciones: string | null; // Motivo de cancelación u observaciones
     muelle_cd_asignado: number | null;
 
     // Relaciones

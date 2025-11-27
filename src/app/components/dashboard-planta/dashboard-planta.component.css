@@ -89,6 +89,11 @@
     color: #666;
 }
 
+.info-item mat-icon {
+    vertical-align: middle;
+    margin-right: 4px;
+}
+
 mat-card-actions {
     display: flex;
     flex-wrap: wrap;
@@ -153,6 +158,48 @@ mat-card-actions button {
 
 .full-width {
     width: 100%;
+}
+
+/* Estilos para modal de edición */
+.info-text {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px;
+    background-color: #e3f2fd;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    color: #1565c0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.info-text mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+}
+
+.ticket-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 12px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+}
+
+.detail-item {
+    display: flex;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.detail-item strong {
+    min-width: 100px;
+    color: #666;
 }
 
 /* ============================================ */

@@ -68,7 +68,15 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
   ramplaSeleccionada: number | null = null;
   muelleSeleccionado: number | null = null;
   muelleCD: number | null = null;
-  modalActivo: 'rampla' | 'muelle' | null = null;
+  modalActivo: 'rampla' | 'muelle' | 'cancelar' | null = null;
+
+  // Modal de cancelación
+  motivosCancelacion = [
+    'Muelle obstruido',
+    'Otro'
+  ];
+  motivoCancelacionSeleccionado: string = '';
+  otraRazonCancelacion: string = '';
 
   cargando = false;
   private subscriptions: Subscription[] = [];
@@ -560,6 +568,68 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
 
   puedeFinalizarDescarga(ticket: Ticket): boolean {
     return ticket.estado_actual === 'Inicio Descarga';
+  }
+
+  puedeCancelarTicket(ticket: Ticket): boolean {
+    return ticket.estado_actual === 'Rampla en Tránsito';
+  }
+
+  abrirModalCancelar(ticket: Ticket): void {
+    this.ticketSeleccionado = ticket;
+    this.motivoCancelacionSeleccionado = '';
+    this.otraRazonCancelacion = '';
+    this.modalActivo = 'cancelar';
+  }
+
+  cerrarModalCancelar(): void {
+    this.ticketSeleccionado = null;
+    this.motivoCancelacionSeleccionado = '';
+    this.otraRazonCancelacion = '';
+    this.modalActivo = null;
+  }
+
+  async confirmarCancelacion(): Promise<void> {
+    if (!this.ticketSeleccionado || !this.motivoCancelacionSeleccionado) {
+      alert('Debe seleccionar un motivo de cancelación');
+      return;
+    }
+
+    if (this.motivoCancelacionSeleccionado === 'Otro' && !this.otraRazonCancelacion.trim()) {
+      alert('Debe especificar el motivo de cancelación');
+      return;
+    }
+
+    const motivo = this.motivoCancelacionSeleccionado === 'Otro' 
+      ? this.otraRazonCancelacion.trim()
+      : this.motivoCancelacionSeleccionado;
+
+    this.cargando = true;
+    try {
+      await this.supabaseService.cancelarTicket(
+        this.ticketSeleccionado.id,
+        motivo
+      );
+
+      this.notificationService.agregarNotificacion(
+        `Ticket #${this.ticketSeleccionado.id} cancelado exitosamente`,
+        this.ticketSeleccionado.id,
+        'success'
+      );
+
+      this.cerrarModalCancelar();
+      await this.cargarDatos();
+    } catch (error: any) {
+      console.error('Error al cancelar ticket:', error);
+      const mensaje = error?.message || 'Error al cancelar el ticket';
+      this.notificationService.agregarNotificacion(
+        mensaje,
+        0,
+        'error'
+      );
+      alert(`Error al cancelar: ${mensaje}`);
+    } finally {
+      this.cargando = false;
+    }
   }
 
   abrirModalAsignarMuelle(ticket: Ticket): void {

@@ -178,6 +178,18 @@
             Ver Detalle
           </button>
 
+          <!-- Editar ticket -->
+          <button 
+            mat-icon-button
+            color="primary"
+            *ngIf="puedeEditarTicket(ticket)"
+            (click)="abrirModalEdicion(ticket)"
+            [disabled]="cargando"
+            matTooltip="Editar muelle de planta"
+          >
+            <mat-icon>edit</mat-icon>
+          </button>
+
           <!-- Eliminar ticket -->
           <button 
             mat-icon-button
@@ -215,6 +227,10 @@
             </div>
             <div class="info-item">
               <strong>Muelle:</strong> {{ ticket.muelle_planta }}
+            </div>
+            <div class="info-item" *ngIf="ticket.estado_actual === 'Cancelado por CD' && ticket.observaciones">
+              <mat-icon color="warn" style="font-size: 18px; width: 18px; height: 18px;">info</mat-icon>
+              <strong>Motivo cancelación:</strong> {{ ticket.observaciones }}
             </div>
           </div>
         </mat-card-content>
@@ -264,6 +280,60 @@
         [disabled]="!accionLlegada || cargando"
       >
         Confirmar
+      </button>
+    </mat-card-actions>
+  </mat-card>
+</div>
+
+<!-- MODAL EDICIÓN DE TICKET -->
+<div class="modal-overlay" *ngIf="mostrarModalEdicion" (click)="cerrarModalEdicion()">
+  <mat-card class="modal-content" (click)="$event.stopPropagation()">
+    <mat-card-header>
+      <mat-card-title>Editar Solicitud</mat-card-title>
+      <mat-card-subtitle>Ticket #{{ ticketEnEdicion?.id }}</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <p class="info-text">
+        <mat-icon>info</mat-icon>
+        Solo puedes editar el muelle de planta mientras la solicitud esté en estado <strong>"Pendiente Asignación"</strong>.
+      </p>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Muelle en Planta</mat-label>
+        <input 
+          matInput 
+          type="number" 
+          [(ngModel)]="nuevoMuellePlanta"
+          placeholder="Ej: 1"
+          min="1"
+        >
+        <mat-hint>Número del muelle en la planta</mat-hint>
+      </mat-form-field>
+
+      <div class="ticket-details">
+        <div class="detail-item">
+          <strong>Tipo:</strong> {{ ticketEnEdicion?.tipo_ticket }}
+        </div>
+        <div class="detail-item">
+          <strong>Muelle actual:</strong> {{ ticketEnEdicion?.muelle_planta }}
+        </div>
+        <div class="detail-item">
+          <strong>Estado:</strong> {{ ticketEnEdicion?.estado_actual }}
+        </div>
+      </div>
+    </mat-card-content>
+
+    <mat-card-actions>
+      <button mat-button (click)="cerrarModalEdicion()">Cancelar</button>
+      <button 
+        mat-raised-button 
+        color="primary" 
+        (click)="guardarEdicionTicket()"
+        [disabled]="nuevoMuellePlanta < 1 || cargando"
+      >
+        <mat-spinner *ngIf="cargando" diameter="20"></mat-spinner>
+        <span *ngIf="!cargando">Guardar Cambios</span>
       </button>
     </mat-card-actions>
   </mat-card>

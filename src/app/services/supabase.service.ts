@@ -244,6 +244,140 @@ export class SupabaseService {
         await this.registrarTiempo(dto.ticket_id, nuevoEstado, user.id);
     }
 
+    async actualizarMuellePlanta(ticketId: number, nuevoMuellePlanta: number): Promise<void> {
+        const user = this.getCurrentUser();
+        if (!user) throw new Error('Usuario no autenticado');
+
+        console.log('=== ACTUALIZAR MUELLE PLANTA ===');
+        console.log('Ticket ID:', ticketId);
+        console.log('Nuevo Muelle Planta:', nuevoMuellePlanta);
+        console.log('Usuario:', user.id);
+
+        // Verificar que el ticket pertenece al usuario y está en estado Pendiente Asignación
+        const { data: ticket, error: fetchError } = await this.supabase
+            .from('tickets')
+            .select('planta_user_id, estado_actual')
+            .eq('id', ticketId)
+            .single();
+
+        console.log('Ticket encontrado:', ticket);
+
+        if (fetchError) {
+            console.error('Error al buscar ticket:', fetchError);
+            throw new Error('No se pudo encontrar el ticket');
+        }
+        if (ticket.planta_user_id !== user.id) {
+            throw new Error('No tiene permisos para editar este ticket');
+        }
+        if (ticket.estado_actual !== 'Pendiente Asignación') {
+            throw new Error('Solo se pueden editar tickets en estado Pendiente Asignación');
+        }
+
+        // Actualizar el muelle_planta
+        const { error: updateError } = await this.supabase
+            .from('tickets')
+            .update({ muelle_planta: nuevoMuellePlanta })
+            .eq('id', ticketId);
+
+        if (updateError) {
+            console.error('Error al actualizar muelle_planta:', updateError);
+            throw new Error('Error al actualizar el muelle de planta');
+        }
+
+        console.log('✅ Muelle de planta actualizado exitosamente');
+    }
+
+    async cancelarTicket(ticketId: number, motivoCancelacion: string): Promise<void> {
+        const user = this.getCurrentUser();
+        if (!user) throw new Error('Usuario no autenticado');
+
+        console.log('=== CANCELAR TICKET (ROL CD) ===');
+        console.log('Ticket ID:', ticketId);
+        console.log('Motivo:', motivoCancelacion);
+        console.log('Usuario:', user.id);
+
+        try {
+            // Verificar que el ticket existe y está en estado "Rampla en Tránsito"
+            const { data: ticket, error: fetchError } = await this.supabase
+                .from('tickets')
+                .select('id, estado_actual, planta_user_id, rampla_asignada_id, muelle_asignado_id')
+                .eq('id', ticketId)
+                .single();
+
+            console.log('Ticket encontrado:', ticket);
+            console.log('Error al buscar:', fetchError);
+
+            if (fetchError) {
+                console.error('❌ Error al buscar ticket:', fetchError);
+                throw new Error(`No se pudo encontrar el ticket: ${fetchError.message}`);
+            }
+            if (!ticket) {
+                throw new Error('Ticket no encontrado');
+            }
+            if (ticket.estado_actual !== 'Rampla en Tránsito') {
+                throw new Error(`Solo se pueden cancelar tickets en estado "Rampla en Tránsito". Estado actual: ${ticket.estado_actual}`);
+            }
+
+            // Cambiar estado del ticket a "Cancelado por CD"
+            console.log('Actualizando estado del ticket...');
+            const { data: ticketActualizado, error: updateTicketError } = await this.supabase
+                .from('tickets')
+                .update({ 
+                    estado_actual: 'Cancelado por CD',
+                    observaciones: motivoCancelacion
+                })
+                .eq('id', ticketId)
+                .select();
+
+            console.log('Ticket actualizado:', ticketActualizado);
+            console.log('Error al actualizar:', updateTicketError);
+
+            if (updateTicketError) {
+                console.error('❌ Error al actualizar ticket:', updateTicketError);
+                throw new Error(`Error al cancelar el ticket: ${updateTicketError.message}`);
+            }
+
+            // Liberar la rampla asignada
+            if (ticket.rampla_asignada_id) {
+                console.log('Liberando rampla:', ticket.rampla_asignada_id);
+                const { error: ramplaError } = await this.supabase
+                    .from('ramplas')
+                    .update({ 
+                        estado: 'Libre',
+                        ticket_asignado_id: null 
+                    })
+                    .eq('id', ticket.rampla_asignada_id);
+
+                if (ramplaError) {
+                    console.error('⚠️ Error al liberar rampla:', ramplaError);
+                    // No lanzar error, solo advertencia
+                }
+            }
+
+            // Liberar el muelle CD asignado (si existe)
+            if (ticket.muelle_asignado_id) {
+                console.log('Liberando muelle CD:', ticket.muelle_asignado_id);
+                const { error: muelleError } = await this.supabase
+                    .from('muelles')
+                    .update({ 
+                        estado: 'Libre',
+                        ticket_actual_id: null 
+                    })
+                    .eq('id', ticket.muelle_asignado_id);
+
+                if (muelleError) {
+                    console.error('⚠️ Error al liberar muelle CD:', muelleError);
+                    // No lanzar error, solo advertencia
+                }
+            }
+
+            console.log('✅ Ticket cancelado exitosamente');
+        } catch (error: any) {
+            console.error('❌ Error en cancelarTicket:', error);
+            throw error;
+        }
+    }
+
     async eliminarTicket(ticketId: number): Promise<void> {
         const user = this.getCurrentUser();
         if (!user) throw new Error('Usuario no autenticado');
