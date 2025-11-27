@@ -142,6 +142,32 @@
     height: 16px;
 }
 
+.ramplas-table .fila-bloqueada {
+    background-color: #fffbf5;
+    border-left: 3px solid #f57c00;
+}
+
+.estado-disponible-column {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.motivo-bloqueo-inline {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #f57c00;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.motivo-bloqueo-inline mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
 /* Estados vacíos y carga */
 .loading-container {
     display: flex;
@@ -230,6 +256,33 @@
     justify-content: flex-end;
     gap: 12px;
     margin-top: 24px;
+}
+
+/* Modal motivo de bloqueo */
+.modal-motivo {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    max-width: 450px;
+    width: 100%;
+}
+
+.modal-motivo h2 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 20px;
+    color: #333;
+}
+
+.modal-message {
+    margin-bottom: 20px;
+    color: #666;
+    line-height: 1.5;
+}
+
+.modal-motivo mat-form-field {
+    width: 100%;
 }
 
 /* Responsive */

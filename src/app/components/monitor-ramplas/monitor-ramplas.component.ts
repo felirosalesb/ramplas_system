@@ -46,16 +46,25 @@ export class MonitorRamplasComponent implements OnInit, OnDestroy {
 
   // Estadísticas
   get ramplasLibres(): number {
-    return this.ramplas.filter(r => r.estado === 'Libre').length;
+    return this.ramplas.filter(r => r.activo && r.estado === 'Libre').length;
   }
 
   get ramplasEnServicio(): number {
-    return this.ramplas.filter(r => r.estado === 'En Servicio').length;
+    return this.ramplas.filter(r => r.activo && r.estado === 'En Servicio').length;
+  }
+
+  get ramplasActivas(): number {
+    return this.ramplas.filter(r => r.activo).length;
+  }
+
+  get ramplasInactivas(): number {
+    return this.ramplas.filter(r => !r.activo).length;
   }
 
   get porcentajeUtilizacion(): number {
-    if (this.ramplas.length === 0) return 0;
-    return Math.round((this.ramplasEnServicio / this.ramplas.length) * 100);
+    const activas = this.ramplasActivas;
+    if (activas === 0) return 0;
+    return Math.round((this.ramplasEnServicio / activas) * 100);
   }
 
   constructor(private supabaseService: SupabaseService) { }
@@ -143,6 +152,7 @@ export class MonitorRamplasComponent implements OnInit, OnDestroy {
   }
 
   getEstadoColorClass(estado: string): string {
+    if (estado === 'Inactiva') return 'estado-inactiva';
     return estado === 'Libre' ? 'estado-libre' : 'estado-servicio';
   }
 
@@ -168,6 +178,7 @@ export class MonitorRamplasComponent implements OnInit, OnDestroy {
     const iconos: { [key: string]: string } = {
       'Libre': 'check_circle',
       'En Servicio': 'local_shipping',
+      'Inactiva': 'block',
       'Pendiente Asignación': 'pending',
       'Rampla en Tránsito': 'assignment_turned_in',
       'Rampla en Planta': 'factory',

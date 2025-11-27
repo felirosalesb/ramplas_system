@@ -62,8 +62,20 @@
           <mat-icon>inventory_2</mat-icon>
         </div>
         <div class="stat-info">
-          <div class="stat-value">{{ ramplas.length }}</div>
-          <div class="stat-label">Total Ramplas</div>
+          <div class="stat-value">{{ ramplasActivas }}</div>
+          <div class="stat-label">Ramplas Activas</div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card" *ngIf="ramplasInactivas > 0">
+      <mat-card-content>
+        <div class="stat-icon bloqueada">
+          <mat-icon>block</mat-icon>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value">{{ ramplasInactivas }}</div>
+          <div class="stat-label">Ramplas Bloqueadas</div>
         </div>
       </mat-card-content>
     </mat-card>
@@ -81,17 +93,20 @@
 
   <!-- Vista Grid -->
   <div *ngIf="vistaActual === 'grid' && !cargando" class="ramplas-grid">
-    <mat-card *ngFor="let rampla of ramplas" class="rampla-card" [class.libre]="rampla.estado === 'Libre'">
+    <mat-card *ngFor="let rampla of ramplas" class="rampla-card" [class.libre]="rampla.estado === 'Libre' && rampla.activo" [class.bloqueada-card]="!rampla.activo">
       <mat-card-header>
         <mat-card-title>
-          <mat-icon [class]="getEstadoColorClass(rampla.estado)">
+          <mat-icon [class]="getEstadoColorClass(rampla.activo ? rampla.estado : 'Inactiva')" *ngIf="rampla.activo">
             {{ obtenerIconoEstado(rampla.estado) }}
+          </mat-icon>
+          <mat-icon class="estado-inactiva" *ngIf="!rampla.activo">
+            block
           </mat-icon>
           {{ rampla.nombre }}
         </mat-card-title>
         <mat-card-subtitle>
-          <mat-chip [color]="rampla.estado === 'Libre' ? 'primary' : 'accent'">
-            {{ rampla.estado }}
+          <mat-chip [color]="!rampla.activo ? 'warn' : (rampla.estado === 'Libre' ? 'primary' : 'accent')">
+            {{ rampla.activo ? rampla.estado : 'Inactiva' }}
           </mat-chip>
         </mat-card-subtitle>
       </mat-card-header>
@@ -115,7 +130,12 @@
               <strong>Tiempo:</strong> {{ rampla.tiempoEnEstado }}
             </div>
           </div>
-          <div *ngIf="!rampla.ticket" class="disponible">
+          <div *ngIf="!rampla.activo" class="bloqueada">
+            <mat-icon color="warn">block</mat-icon>
+            <p><strong>Inactiva</strong></p>
+            <p class="motivo" *ngIf="rampla.motivo_bloqueo">{{ rampla.motivo_bloqueo }}</p>
+          </div>
+          <div *ngIf="!rampla.ticket && rampla.activo" class="disponible">
             <mat-icon>check_circle_outline</mat-icon>
             <p>Disponible</p>
           </div>
@@ -126,17 +146,20 @@
 
   <!-- Vista Lista -->
   <div *ngIf="vistaActual === 'lista' && !cargando" class="ramplas-lista">
-    <mat-card *ngFor="let rampla of ramplas" class="rampla-list-item">
+    <mat-card *ngFor="let rampla of ramplas" class="rampla-list-item" [class.bloqueada-card]="!rampla.activo">
       <div class="list-item-content">
         <div class="list-item-header">
           <div class="rampla-name">
-            <mat-icon [class]="getEstadoColorClass(rampla.estado)">
+            <mat-icon [class]="getEstadoColorClass(rampla.estado)" *ngIf="rampla.activo">
               {{ obtenerIconoEstado(rampla.estado) }}
+            </mat-icon>
+            <mat-icon class="estado-inactiva" *ngIf="!rampla.activo">
+              block
             </mat-icon>
             <h3>{{ rampla.nombre }}</h3>
           </div>
-          <mat-chip [color]="rampla.estado === 'Libre' ? 'primary' : 'accent'">
-            {{ rampla.estado }}
+          <mat-chip [color]="!rampla.activo ? 'warn' : (rampla.estado === 'Libre' ? 'primary' : 'accent')">
+            {{ rampla.activo ? rampla.estado : 'Inactiva' }}
           </mat-chip>
         </div>
 
@@ -159,6 +182,11 @@
             <span class="label">Tiempo:</span>
             <span class="value">{{ rampla.tiempoEnEstado }}</span>
           </div>
+        </div>
+
+        <div class="list-item-bloqueada" *ngIf="!rampla.activo">
+          <mat-icon color="warn">block</mat-icon>
+          <span><strong>Rampla Inactiva:</strong> {{ rampla.motivo_bloqueo || 'Sin motivo especificado' }}</span>
         </div>
       </div>
     </mat-card>

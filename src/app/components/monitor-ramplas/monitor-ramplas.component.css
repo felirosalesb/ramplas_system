@@ -72,6 +72,11 @@
     color: #9c27b0;
 }
 
+.stat-icon.bloqueada {
+    background-color: #fff3e0;
+    color: #f57c00;
+}
+
 .stat-info {
     flex: 1;
 }
@@ -124,8 +129,13 @@
     border-left: 4px solid #4caf50;
 }
 
-.rampla-card:not(.libre) {
+.rampla-card:not(.libre):not(.bloqueada-card) {
     border-left: 4px solid #2196f3;
+}
+
+.rampla-card.bloqueada-card {
+    border-left: 4px solid #f57c00;
+    background-color: #fffbf5;
 }
 
 .rampla-card mat-card-header {
@@ -175,6 +185,35 @@
     width: 48px;
     height: 48px;
     margin-bottom: 8px;
+}
+
+.bloqueada {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background-color: #fff3e0;
+    border-radius: 4px;
+    margin-top: 12px;
+}
+
+.bloqueada mat-icon {
+    font-size: 36px;
+    width: 36px;
+    height: 36px;
+    margin-bottom: 8px;
+}
+
+.bloqueada p {
+    margin: 4px 0;
+    text-align: center;
+}
+
+.bloqueada .motivo {
+    color: #f57c00;
+    font-size: 13px;
+    font-weight: 500;
 }
 
 /* Lista de ramplas */
@@ -238,6 +277,27 @@
     color: #333;
 }
 
+.list-item-bloqueada {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background-color: #fff3e0;
+    border-radius: 4px;
+    border-left: 3px solid #f57c00;
+}
+
+.list-item-bloqueada mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+}
+
+.list-item-bloqueada span {
+    color: #e65100;
+    font-size: 14px;
+}
+
 /* Estados */
 .estado-libre {
     color: #4caf50 !important;
@@ -245,6 +305,10 @@
 
 .estado-servicio {
     color: #2196f3 !important;
+}
+
+.estado-inactiva {
+    color: #f57c00 !important;
 }
 
 .estado-pendiente {

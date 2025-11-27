@@ -137,8 +137,8 @@
         <ng-container matColumnDef="estado">
           <th mat-header-cell *matHeaderCellDef>Estado Operativo</th>
           <td mat-cell *matCellDef="let rampla">
-            <mat-chip [color]="getEstadoColor(rampla.estado)">
-              {{ rampla.estado }}
+            <mat-chip [color]="getEstadoColor(rampla.activo ? rampla.estado : 'Inactiva')">
+              {{ rampla.activo ? rampla.estado : 'Inactiva' }}
             </mat-chip>
           </td>
         </ng-container>
@@ -147,12 +147,18 @@
         <ng-container matColumnDef="activo">
           <th mat-header-cell *matHeaderCellDef>Disponible</th>
           <td mat-cell *matCellDef="let rampla">
-            <mat-slide-toggle 
-              [checked]="rampla.activo"
-              (change)="cambiarEstadoActivo(rampla)"
-              [disabled]="cargando">
-              {{ rampla.activo ? 'Activa' : 'Inactiva' }}
-            </mat-slide-toggle>
+            <div class="estado-disponible-column">
+              <mat-slide-toggle 
+                [checked]="rampla.activo"
+                (change)="cambiarEstadoActivo(rampla)"
+                [disabled]="cargando">
+                {{ rampla.activo ? 'Activa' : 'Inactiva' }}
+              </mat-slide-toggle>
+              <div *ngIf="!rampla.activo && rampla.motivo_bloqueo" class="motivo-bloqueo-inline">
+                <mat-icon>block</mat-icon>
+                <span>{{ rampla.motivo_bloqueo }}</span>
+              </div>
+            </div>
           </td>
         </ng-container>
 
@@ -174,7 +180,7 @@
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="columnas"></tr>
-        <tr mat-row *matRowDef="let row; columns: columnas"></tr>
+        <tr mat-row *matRowDef="let row; columns: columnas" [class.fila-bloqueada]="!row.activo"></tr>
       </table>
 
       <div *ngIf="!cargando && ramplasFiltradas.length === 0" class="empty-state">
@@ -249,5 +255,50 @@
         </button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- Modal: Motivo de Bloqueo -->
+<div class="modal-overlay" *ngIf="mostrarModalMotivo" (click)="cerrarModalMotivo()">
+  <div class="modal-content modal-motivo" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>
+        <mat-icon color="warn">block</mat-icon>
+        Desactivar Rampla
+      </h2>
+      <button mat-icon-button (click)="cerrarModalMotivo()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="warning-message">
+        <mat-icon>info</mat-icon>
+        <p>Al desactivar la rampla <strong>"{{ ramplaABloquear?.nombre }}"</strong>, no estará disponible para asignación hasta que la reactive nuevamente.</p>
+      </div>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Motivo de Desactivación</mat-label>
+        <mat-select [(ngModel)]="motivoSeleccionado" required>
+          <mat-option *ngFor="let motivo of motivosBloqueo" [value]="motivo">
+            {{ motivo }}
+          </mat-option>
+        </mat-select>
+        <mat-hint>Seleccione el motivo por el cual se desactiva la rampla</mat-hint>
+      </mat-form-field>
+    </div>
+
+    <div class="modal-actions">
+      <button mat-button (click)="cerrarModalMotivo()">Cancelar</button>
+      <button 
+        mat-raised-button 
+        color="warn" 
+        (click)="confirmarBloqueo()"
+        [disabled]="!motivoSeleccionado || cargando"
+      >
+        <mat-spinner *ngIf="cargando" diameter="20"></mat-spinner>
+        <span *ngIf="!cargando">Desactivar Rampla</span>
+      </button>
+    </div>
   </div>
 </div>

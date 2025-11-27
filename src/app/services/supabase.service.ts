@@ -1021,7 +1021,6 @@ export class SupabaseService {
         const { data, error } = await this.supabase
             .from('ramplas')
             .select('*')
-            .eq('activo', true)
             .order('id', { ascending: true });
 
         if (error) throw error;
@@ -1095,18 +1094,29 @@ export class SupabaseService {
         console.log('Rampla actualizada correctamente');
     }
 
-    async cambiarEstadoActivoRampla(id: number, activo: boolean): Promise<void> {
+    async cambiarEstadoActivoRampla(id: number, activo: boolean, motivoBloqueo: string | null = null): Promise<void> {
         const user = this.getCurrentUser();
         if (!user) throw new Error('Usuario no autenticado');
 
-        console.log('Cambiando estado activo de rampla:', id, activo);
+        console.log('Cambiando estado activo de rampla:', id, activo, motivoBloqueo);
+
+        const updateData: any = {
+            activo: activo,
+            updated_at: new Date().toISOString()
+        };
+
+        // Si se está desactivando, agregar el motivo
+        if (!activo && motivoBloqueo) {
+            updateData.motivo_bloqueo = motivoBloqueo;
+        }
+        // Si se está activando, limpiar el motivo (aunque el trigger lo hace automáticamente)
+        if (activo) {
+            updateData.motivo_bloqueo = null;
+        }
 
         const { error } = await this.supabase
             .from('ramplas')
-            .update({
-                activo: activo,
-                updated_at: new Date().toISOString()
-            })
+            .update(updateData)
             .eq('id', id);
 
         if (error) {
@@ -1343,11 +1353,11 @@ export class SupabaseService {
         console.log('Muelle actualizado correctamente');
     }
 
-    async cambiarEstadoActivoMuelle(id: number, activo: boolean): Promise<void> {
+    async cambiarEstadoActivoMuelle(id: number, activo: boolean, motivoBloqueo?: string): Promise<void> {
         const user = this.getCurrentUser();
         if (!user) throw new Error('Usuario no autenticado');
 
-        console.log('Cambiando estado activo de muelle:', id, activo);
+        console.log('Cambiando estado activo de muelle:', id, activo, motivoBloqueo);
 
         // Verificar que el muelle no esté ocupado antes de desactivar
         if (!activo) {
@@ -1362,12 +1372,20 @@ export class SupabaseService {
             }
         }
 
+        const updateData: any = {
+            activo: activo,
+            updated_at: new Date().toISOString()
+        };
+
+        // Si se está desactivando, incluir el motivo
+        if (!activo && motivoBloqueo) {
+            updateData.motivo_bloqueo = motivoBloqueo;
+        }
+        // Si se está activando, el trigger limpiará automáticamente el motivo
+
         const { error } = await this.supabase
             .from('muelles')
-            .update({
-                activo: activo,
-                updated_at: new Date().toISOString()
-            })
+            .update(updateData)
             .eq('id', id);
 
         if (error) {

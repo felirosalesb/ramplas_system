@@ -46,6 +46,11 @@ mat-card-title {
   color: white !important;
 }
 
+.chip-blocked {
+  background-color: #f57c00 !important;
+  color: white !important;
+}
+
 /* Filtros */
 .filters {
   display: flex;
@@ -75,6 +80,11 @@ mat-card-title {
   font-weight: 600;
 }
 
+.muelles-table .fila-bloqueada {
+  background-color: #fffbf5;
+  border-left: 3px solid #f57c00;
+}
+
 /* Chips de estado */
 .estado-libre {
   background-color: #4CAF50 !important;
@@ -83,6 +93,11 @@ mat-card-title {
 
 .estado-ocupado {
   background-color: #FF9800 !important;
+  color: white !important;
+}
+
+.estado-inactivo {
+  background-color: #f57c00 !important;
   color: white !important;
 }
 
@@ -156,6 +171,35 @@ mat-chip mat-icon {
   color: white;
   padding: 4px 12px;
   border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Estado column con motivo de bloqueo */
+.estado-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.motivo-bloqueo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #fff3e0;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border-left: 3px solid #f57c00;
+}
+
+.motivo-bloqueo mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.motivo-bloqueo span {
+  color: #e65100;
   font-size: 12px;
   font-weight: 500;
 }

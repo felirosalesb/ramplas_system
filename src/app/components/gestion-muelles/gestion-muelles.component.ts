@@ -45,6 +45,12 @@ export class GestionMuellesComponent implements OnInit, OnDestroy {
   modoEdicion = false;
   muelleSeleccionado: Muelle | null = null;
 
+  // Modal motivo bloqueo
+  mostrarModalMotivo = false;
+  muelleABloquear: Muelle | null = null;
+  motivosBloqueo = ['Mantención', 'Fuera de servicio'];
+  motivoSeleccionado = '';
+
   // Formulario
   formMuelle = {
     nombre: '',
@@ -197,19 +203,41 @@ export class GestionMuellesComponent implements OnInit, OnDestroy {
     }
   }
 
-  async cambiarEstadoActivo(muelle: Muelle, nuevoEstado: boolean): Promise<void> {
+  cambiarEstadoActivo(muelle: Muelle, nuevoEstado: boolean): void {
     if (muelle.estado === 'Ocupado' && !nuevoEstado) {
       this.notificationService.agregarNotificacion(
         'No se puede desactivar un muelle que está ocupado',
         0,
         'warning'
       );
+      // Revertir el toggle
+      setTimeout(() => muelle.activo = true, 0);
       return;
     }
 
+    // Si está desactivando, mostrar modal para motivo
+    if (!nuevoEstado) {
+      this.muelleABloquear = muelle;
+      this.motivoSeleccionado = '';
+      this.mostrarModalMotivo = true;
+      // Revertir temporalmente el toggle hasta confirmar
+      setTimeout(() => muelle.activo = true, 0);
+    } else {
+      // Si está activando, hacerlo directamente
+      this.confirmarCambioEstado(muelle, nuevoEstado);
+    }
+  }
+
+  confirmarBloqueo(): void {
+    if (!this.muelleABloquear || !this.motivoSeleccionado) return;
+    this.confirmarCambioEstado(this.muelleABloquear, false, this.motivoSeleccionado);
+    this.cerrarModalMotivo();
+  }
+
+  async confirmarCambioEstado(muelle: Muelle, nuevoEstado: boolean, motivoBloqueo?: string): Promise<void> {
     try {
       this.cargando = true;
-      await this.supabaseService.cambiarEstadoActivoMuelle(muelle.id, nuevoEstado);
+      await this.supabaseService.cambiarEstadoActivoMuelle(muelle.id, nuevoEstado, motivoBloqueo);
       this.notificationService.agregarNotificacion(
         `Muelle ${nuevoEstado ? 'activado' : 'desactivado'} correctamente`,
         0,
@@ -223,10 +251,16 @@ export class GestionMuellesComponent implements OnInit, OnDestroy {
         0,
         'error'
       );
-      await this.cargarMuelles(); // Recargar para revertir el cambio visual
+      await this.cargarMuelles();
     } finally {
       this.cargando = false;
     }
+  }
+
+  cerrarModalMotivo(): void {
+    this.mostrarModalMotivo = false;
+    this.muelleABloquear = null;
+    this.motivoSeleccionado = '';
   }
 
   async eliminarMuelle(muelle: Muelle): Promise<void> {
@@ -300,6 +334,7 @@ export class GestionMuellesComponent implements OnInit, OnDestroy {
   }
 
   getEstadoChipClass(estado: string): string {
+    if (estado === 'Inactivo') return 'estado-inactivo';
     return estado === 'Libre' ? 'estado-libre' : 'estado-ocupado';
   }
 

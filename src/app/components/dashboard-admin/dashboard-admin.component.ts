@@ -52,6 +52,12 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   modoEdicion = false;
   ramplaSeleccionada: Rampla | null = null;
 
+  // Modal de motivo de bloqueo
+  mostrarModalMotivo = false;
+  ramplaABloquear: Rampla | null = null;
+  motivosBloqueo = ['Mantención', 'Fuera de servicio'];
+  motivoSeleccionado: string = '';
+
   // Formulario
   formRampla = {
     nombre: '',
@@ -302,12 +308,42 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     }
   }
 
-  async cambiarEstadoActivo(rampla: Rampla): Promise<void> {
+  cambiarEstadoActivo(rampla: Rampla): void {
     const nuevoEstado = !rampla.activo;
+    
+    // Si se está desactivando, pedir motivo
+    if (!nuevoEstado) {
+      this.ramplaABloquear = rampla;
+      this.motivoSeleccionado = '';
+      this.mostrarModalMotivo = true;
+    } else {
+      // Si se está activando, hacerlo directamente
+      this.confirmarCambioEstado(rampla, true, null);
+    }
+  }
+
+  cerrarModalMotivo(): void {
+    this.mostrarModalMotivo = false;
+    this.ramplaABloquear = null;
+    this.motivoSeleccionado = '';
+  }
+
+  async confirmarBloqueo(): Promise<void> {
+    if (!this.ramplaABloquear || !this.motivoSeleccionado) {
+      alert('Debe seleccionar un motivo de bloqueo');
+      return;
+    }
+
+    await this.confirmarCambioEstado(this.ramplaABloquear, false, this.motivoSeleccionado);
+    this.cerrarModalMotivo();
+  }
+
+  async confirmarCambioEstado(rampla: Rampla, nuevoEstado: boolean, motivo: string | null): Promise<void> {
+    this.cargando = true;
     try {
-      await this.supabaseService.cambiarEstadoActivoRampla(rampla.id, nuevoEstado);
+      await this.supabaseService.cambiarEstadoActivoRampla(rampla.id, nuevoEstado, motivo);
       this.notificationService.agregarNotificacion(
-        `Rampla "${rampla.nombre}" ${nuevoEstado ? 'activada' : 'desactivada'}`,
+        `Rampla "${rampla.nombre}" ${nuevoEstado ? 'activada' : 'desactivada'}${motivo ? ` - ${motivo}` : ''}`,
         0,
         'success'
       );
@@ -319,6 +355,8 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
         0,
         'error'
       );
+    } finally {
+      this.cargando = false;
     }
   }
 
@@ -354,7 +392,8 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   }
 
   getEstadoColor(estado: string): string {
-    return estado === 'Libre' ? 'primary' : 'warn';
+    if (estado === 'Inactiva') return 'warn';
+    return estado === 'Libre' ? 'primary' : 'accent';
   }
 
   get ramplasActivas(): number {

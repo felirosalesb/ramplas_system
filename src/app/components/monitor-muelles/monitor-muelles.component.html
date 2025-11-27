@@ -14,13 +14,16 @@
       <div class="stats-bar">
         <div class="stats">
           <mat-chip class="chip-info">
-            Total: {{ muelles.length }}
+            Activos: {{ muellesActivosCount }}
           </mat-chip>
           <mat-chip class="chip-success">
             Libres: {{ muellesLibresCount }}
           </mat-chip>
           <mat-chip class="chip-warning">
             Ocupados: {{ muellesOcupadosCount }}
+          </mat-chip>
+          <mat-chip class="chip-blocked" *ngIf="muellesInactivosCount > 0">
+            Bloqueados: {{ muellesInactivosCount }}
           </mat-chip>
         </div>
       </div>
@@ -73,10 +76,11 @@
           <ng-container matColumnDef="estado">
             <th mat-header-cell *matHeaderCellDef>Estado</th>
             <td mat-cell *matCellDef="let muelle">
-              <mat-chip [class]="getEstadoChipClass(muelle.estado)">
-                <mat-icon *ngIf="muelle.estado === 'Libre'">check_circle</mat-icon>
-                <mat-icon *ngIf="muelle.estado === 'Ocupado'">schedule</mat-icon>
-                {{ muelle.estado }}
+              <mat-chip [class]="getEstadoChipClass(muelle.activo ? muelle.estado : 'Inactivo')">
+                <mat-icon *ngIf="muelle.activo && muelle.estado === 'Libre'">check_circle</mat-icon>
+                <mat-icon *ngIf="muelle.activo && muelle.estado === 'Ocupado'">schedule</mat-icon>
+                <mat-icon *ngIf="!muelle.activo">block</mat-icon>
+                {{ muelle.activo ? muelle.estado : 'Inactivo' }}
               </mat-chip>
             </td>
           </ng-container>
@@ -105,14 +109,20 @@
           <ng-container matColumnDef="activo">
             <th mat-header-cell *matHeaderCellDef>Estado</th>
             <td mat-cell *matCellDef="let muelle">
-              <span [class]="muelle.activo ? 'badge-success' : 'badge-inactive'">
-                {{ muelle.activo ? 'Activo' : 'Inactivo' }}
-              </span>
+              <div class="estado-column">
+                <span [class]="muelle.activo ? 'badge-success' : 'badge-inactive'">
+                  {{ muelle.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+                <div *ngIf="!muelle.activo && muelle.motivo_bloqueo" class="motivo-bloqueo">
+                  <mat-icon color="warn">block</mat-icon>
+                  <span>{{ muelle.motivo_bloqueo }}</span>
+                </div>
+              </div>
             </td>
           </ng-container>
 
           <tr mat-header-row *matHeaderRowDef="columnas"></tr>
-          <tr mat-row *matRowDef="let row; columns: columnas;"></tr>
+          <tr mat-row *matRowDef="let row; columns: columnas;" [class.fila-bloqueada]="!row.activo"></tr>
         </table>
 
         <div *ngIf="!cargando && muellesFiltrados.length === 0" class="no-data">

@@ -108,6 +108,7 @@ export class MonitorMuellesComponent implements OnInit, OnDestroy {
   }
 
   getEstadoChipClass(estado: string): string {
+    if (estado === 'Inactivo') return 'estado-inactivo';
     return estado === 'Libre' ? 'estado-libre' : 'estado-ocupado';
   }
 
@@ -117,5 +118,13 @@ export class MonitorMuellesComponent implements OnInit, OnDestroy {
 
   get muellesOcupadosCount(): number {
     return this.muelles.filter(m => m.estado === 'Ocupado').length;
+  }
+
+  get muellesActivosCount(): number {
+    return this.muelles.filter(m => m.activo).length;
+  }
+
+  get muellesInactivosCount(): number {
+    return this.muelles.filter(m => !m.activo).length;
   }
 }

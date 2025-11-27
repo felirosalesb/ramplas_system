@@ -2,6 +2,7 @@
 
 export type TipoRampla = 'frugon_cerrado' | 'cortina';
 export type TipoTicket = 'Retiro pallets producción' | 'Solicitar Pallets vacíos';
+export type MotivoBloqueo = 'Mantención' | 'Fuera de servicio';
 
 export interface Rampla {
     id: number;
@@ -9,6 +10,7 @@ export interface Rampla {
     tipo_rampla: TipoRampla;
     estado: 'Libre' | 'En Servicio';
     activo: boolean;
+    motivo_bloqueo: string | null;
     ticket_actual_id: number | null;
     created_at?: string;
 }
@@ -19,6 +21,7 @@ export interface Muelle {
     estado: 'Libre' | 'Ocupado';
     ticket_actual_id: number | null;
     activo: boolean;
+    motivo_bloqueo: string | null;
     created_at?: string;
     updated_at?: string;
     // Relaciones
