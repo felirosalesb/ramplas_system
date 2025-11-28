@@ -8,6 +8,7 @@ import { MonitorMuellesComponent } from './components/monitor-muelles/monitor-mu
 import { DetalleTicketComponent } from './components/detalle-ticket/detalle-ticket.component';
 import { NotificacionesComponent } from './components/notificaciones/notificaciones.component';
 import { GestionMuellesComponent } from './components/gestion-muelles/gestion-muelles.component';
+import { ReportesCdComponent } from './components/reportes-cd/reportes-cd.component';
 import { AuthGuard } from './guards/auth.guard';
 import { DashboardAdminComponent } from './components/dashboard-admin/dashboard-admin.component';
 
@@ -64,6 +65,11 @@ export const routes: Routes = [
     {
         path: 'gestion-muelles',
         component: GestionMuellesComponent,
+        canActivate: [AuthGuard]
+    },
+    {
+        path: 'reportes-cd',
+        component: ReportesCdComponent,
         canActivate: [AuthGuard]
     },
     {

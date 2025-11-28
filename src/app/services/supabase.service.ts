@@ -1010,6 +1010,40 @@ export class SupabaseService {
         return data || [];
     }
 
+    // ==================== REPORTES ====================
+
+    async getTicketsFinalizadosRango(fechaInicio: string, fechaFin: string): Promise<Ticket[]> {
+        console.log('Consultando tickets finalizados en rango:', fechaInicio, 'a', fechaFin);
+        
+        const { data, error } = await this.supabase
+            .from('tickets')
+            .select(`
+                *,
+                rampla_asignada:ramplas!rampla_asignada_id(*)
+            `)
+            .gte('fecha_creacion', fechaInicio)
+            .lte('fecha_creacion', fechaFin)
+            .in('estado_actual', [
+                'Fin Descarga',
+                'Libre',
+                'Cargado - Espera Chofer',
+                'Asignada a Muelle CD',
+                'Inicio Descarga'
+            ])
+            .not('cantidad_pallets', 'is', null) // Solo tickets con cantidad de pallets registrada
+            .order('fecha_creacion', { ascending: true });
+
+        if (error) {
+            console.error('Error al obtener tickets finalizados:', error);
+            throw error;
+        }
+
+        console.log('Tickets finalizados obtenidos:', data?.length || 0);
+        return data || [];
+    }
+
+    // ==================== RAMPLAS ====================
+
     async getRamplasLibres(): Promise<Rampla[]> {
         const { data, error } = await this.supabase
             .from('ramplas')

@@ -1,0 +1,262 @@
+<app-navbar></app-navbar>
+
+<div class="reportes-container">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-content">
+      <mat-icon class="header-icon">assessment</mat-icon>
+      <div>
+        <h1>Generación de Reportes</h1>
+        <p class="subtitle">Análisis de viajes y pallets enviados</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <mat-card class="filters-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>filter_list</mat-icon>
+        Parámetros del Reporte
+      </mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+      <div class="filters-grid">
+        <!-- Fecha Inicio -->
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Fecha Inicio</mat-label>
+          <input matInput [matDatepicker]="pickerInicio" [(ngModel)]="fechaInicio" required>
+          <mat-datepicker-toggle matIconSuffix [for]="pickerInicio"></mat-datepicker-toggle>
+          <mat-datepicker #pickerInicio></mat-datepicker>
+          <mat-icon matPrefix>event</mat-icon>
+        </mat-form-field>
+
+        <!-- Hora Inicio -->
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Hora Inicio</mat-label>
+          <input matInput type="time" [(ngModel)]="horaInicio">
+          <mat-icon matPrefix>schedule</mat-icon>
+        </mat-form-field>
+
+        <!-- Fecha Fin -->
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Fecha Fin</mat-label>
+          <input matInput [matDatepicker]="pickerFin" [(ngModel)]="fechaFin" required>
+          <mat-datepicker-toggle matIconSuffix [for]="pickerFin"></mat-datepicker-toggle>
+          <mat-datepicker #pickerFin></mat-datepicker>
+          <mat-icon matPrefix>event</mat-icon>
+        </mat-form-field>
+
+        <!-- Hora Fin -->
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Hora Fin</mat-label>
+          <input matInput type="time" [(ngModel)]="horaFin">
+          <mat-icon matPrefix>schedule</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <div class="actions-row">
+        <button 
+          mat-raised-button 
+          color="primary" 
+          (click)="generarReporte()"
+          [disabled]="cargando || !fechaInicio || !fechaFin"
+          class="btn-generar">
+          <mat-icon>play_circle</mat-icon>
+          Generar Reporte
+        </button>
+
+        <button 
+          mat-button 
+          (click)="limpiarReporte()"
+          [disabled]="cargando || !reporteGenerado">
+          <mat-icon>clear</mat-icon>
+          Limpiar
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Loading -->
+  <div class="loading-container" *ngIf="cargando">
+    <mat-spinner></mat-spinner>
+    <p>Generando reporte...</p>
+  </div>
+
+  <!-- Resultados -->
+  <div class="resultados" *ngIf="reporteGenerado && !cargando">
+    
+    <!-- Estadísticas Generales -->
+    <div class="stats-cards">
+      <mat-card class="stat-card stat-primary">
+        <div class="stat-icon">
+          <mat-icon>inventory_2</mat-icon>
+        </div>
+        <div class="stat-content">
+          <h3>{{ totalPallets }}</h3>
+          <p>Pallets Totales</p>
+        </div>
+      </mat-card>
+
+      <mat-card class="stat-card stat-success">
+        <div class="stat-icon">
+          <mat-icon>confirmation_number</mat-icon>
+        </div>
+        <div class="stat-content">
+          <h3>{{ totalTickets }}</h3>
+          <p>Tickets Finalizados</p>
+        </div>
+      </mat-card>
+
+      <mat-card class="stat-card stat-info">
+        <div class="stat-icon">
+          <mat-icon>local_shipping</mat-icon>
+        </div>
+        <div class="stat-content">
+          <h3>{{ totalViajes }}</h3>
+          <p>Viajes Realizados</p>
+        </div>
+      </mat-card>
+    </div>
+
+    <!-- Acciones de Exportación -->
+    <div class="export-actions">
+      <button mat-raised-button color="accent" (click)="exportarExcel()">
+        <mat-icon>table_chart</mat-icon>
+        Exportar a Excel
+      </button>
+    </div>
+
+    <!-- Tabla 1: Viajes de Ramplas -->
+    <mat-card class="table-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>local_shipping</mat-icon>
+          Viajes por Rampla
+        </mat-card-title>
+        <mat-card-subtitle>Registro cronológico de asignaciones</mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        <div class="table-container" *ngIf="viajesRamplas.length > 0">
+          <table mat-table [dataSource]="viajesRamplas" class="viajes-table">
+            
+            <!-- Columna Rampla -->
+            <ng-container matColumnDef="rampla">
+              <th mat-header-cell *matHeaderCellDef>Rampla</th>
+              <td mat-cell *matCellDef="let element">
+                <div class="rampla-cell">
+                  <mat-icon>local_shipping</mat-icon>
+                  <strong>{{ element.rampla }}</strong>
+                  <mat-chip class="chip-viajes">{{ element.viajes.length }} viajes</mat-chip>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Columna Viajes -->
+            <ng-container matColumnDef="viajes">
+              <th mat-header-cell *matHeaderCellDef>Viajes (Planta - Muelle) - Cronológico</th>
+              <td mat-cell *matCellDef="let element">
+                <div class="viajes-list">
+                  <div class="viaje-item" *ngFor="let viaje of element.viajes; let i = index">
+                    <span class="viaje-numero">{{ i + 1 }}.</span>
+                    <span class="viaje-planta">{{ viaje.planta }}</span>
+                    <mat-icon class="viaje-icon">arrow_forward</mat-icon>
+                    <span class="viaje-muelle">Muelle {{ viaje.muelle }}</span>
+                    <span class="viaje-fecha">{{ viaje.fecha | date:'dd/MM HH:mm' }}</span>
+                    <span class="viaje-ticket">Ticket #{{ viaje.ticketId }}</span>
+                  </div>
+                </div>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="columnasViajes"></tr>
+            <tr mat-row *matRowDef="let row; columns: columnasViajes;"></tr>
+          </table>
+        </div>
+
+        <div class="empty-state" *ngIf="viajesRamplas.length === 0">
+          <mat-icon>inbox</mat-icon>
+          <p>No se registraron viajes en el período seleccionado</p>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Tabla 2: Cantidad de Pallets por Planta -->
+    <mat-card class="table-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>factory</mat-icon>
+          Cantidad de Pallets por Planta
+        </mat-card-title>
+        <mat-card-subtitle>Pallets enviados en el período</mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        <div class="table-container" *ngIf="palletsPorPlanta.length > 0">
+          <table mat-table [dataSource]="palletsPorPlanta" class="pallets-table">
+            
+            <!-- Columna Planta -->
+            <ng-container matColumnDef="planta">
+              <th mat-header-cell *matHeaderCellDef>Planta</th>
+              <td mat-cell *matCellDef="let element">
+                <div class="planta-cell">
+                  <mat-icon>factory</mat-icon>
+                  <strong>{{ element.planta }}</strong>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Columna Cantidad Enviada -->
+            <ng-container matColumnDef="cantidadEnviada">
+              <th mat-header-cell *matHeaderCellDef>Cantidad Enviada</th>
+              <td mat-cell *matCellDef="let element">
+                <div class="cantidad-cell">
+                  <mat-icon>inventory_2</mat-icon>
+                  <span class="cantidad-numero">{{ element.cantidadEnviada }}</span>
+                  <span class="cantidad-label">pallets</span>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Columna Número de Tickets -->
+            <ng-container matColumnDef="numeroTickets">
+              <th mat-header-cell *matHeaderCellDef>N° Tickets</th>
+              <td mat-cell *matCellDef="let element">
+                <mat-chip class="chip-tickets">{{ element.numeroTickets }}</mat-chip>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="columnasPallets"></tr>
+            <tr mat-row *matRowDef="let row; columns: columnasPallets;"></tr>
+          </table>
+
+          <!-- Fila de totales -->
+          <div class="totales-row">
+            <div class="total-item">
+              <strong>Total General:</strong>
+              <span>{{ totalPallets }} pallets</span>
+            </div>
+            <div class="total-item">
+              <strong>Total Tickets:</strong>
+              <span>{{ totalTickets }} tickets</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="empty-state" *ngIf="palletsPorPlanta.length === 0">
+          <mat-icon>inbox</mat-icon>
+          <p>No se registraron pallets en el período seleccionado</p>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Estado inicial -->
+  <div class="empty-initial" *ngIf="!reporteGenerado && !cargando">
+    <mat-icon>assessment</mat-icon>
+    <h3>Generar Reporte</h3>
+    <p>Selecciona el rango de fechas y horas, luego haz clic en "Generar Reporte"</p>
+  </div>
+</div>

@@ -24,6 +24,12 @@
         <span class="button-text">Monitor Muelles</span>
       </button>
 
+      <!-- Reportes solo para CD -->
+      <button mat-button routerLink="/reportes-cd" routerLinkActive="active" *ngIf="userRole === 'cd'">
+        <mat-icon>assessment</mat-icon>
+        <span class="button-text">Reportes</span>
+      </button>
+
       <!-- Notificaciones -->
       <button mat-icon-button (click)="irANotificaciones()">
         <mat-icon [matBadge]="notificacionesCount" matBadgeColor="warn" [matBadgeHidden]="notificacionesCount === 0">
