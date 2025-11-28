@@ -325,3 +325,89 @@ mat-card-actions button {
         gap: 12px;
     }
 }
+
+/* ==================== MODAL FINALIZAR CARGA ==================== */
+
+.modal-finalizar mat-card-header {
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    color: white;
+    padding: 20px;
+    margin: -16px -16px 20px -16px;
+}
+
+.modal-finalizar mat-card-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: white;
+    font-size: 24px;
+}
+
+.modal-finalizar mat-card-title mat-icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+}
+
+.modal-finalizar mat-card-subtitle {
+    color: rgba(255, 255, 255, 0.9);
+    margin-top: 8px;
+}
+
+.modal-finalizar .info-text {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #E3F2FD;
+    border-left: 4px solid #2196F3;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.modal-finalizar .info-text mat-icon {
+    color: #2196F3;
+}
+
+.modal-finalizar .alert-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    background: #FFF3E0;
+    border-left: 4px solid #FF9800;
+    border-radius: 4px;
+    margin-top: 20px;
+}
+
+.modal-finalizar .alert-info mat-icon {
+    color: #FF9800;
+    flex-shrink: 0;
+}
+
+.modal-finalizar .alert-info span {
+    line-height: 1.6;
+}
+
+.modal-finalizar mat-form-field {
+    font-size: 18px;
+}
+
+.modal-finalizar mat-form-field input {
+    font-size: 24px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.modal-finalizar mat-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 20px;
+    margin-top: 20px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.modal-finalizar mat-card-actions button {
+    min-width: 120px;
+}

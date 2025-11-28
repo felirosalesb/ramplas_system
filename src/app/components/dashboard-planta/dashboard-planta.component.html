@@ -338,3 +338,76 @@
     </mat-card-actions>
   </mat-card>
 </div>
+
+<!-- ==================== MODAL FINALIZAR CARGA ==================== -->
+<div class="modal-overlay" *ngIf="mostrarModalFinalizarCarga" (click)="cerrarModalFinalizarCarga()">
+  <mat-card class="modal-content modal-finalizar" (click)="$event.stopPropagation()">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>inventory_2</mat-icon>
+        Finalizar Carga
+      </mat-card-title>
+      <mat-card-subtitle>Ticket #{{ ticketFinalizarCarga?.id }}</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <p class="info-text">
+        <mat-icon>info</mat-icon>
+        Ingresa la cantidad de pallets que fueron cargados en la rampla.
+      </p>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Cantidad de Pallets Cargados</mat-label>
+        <input 
+          matInput 
+          type="number" 
+          [(ngModel)]="cantidadPallets"
+          placeholder="Ej: 33"
+          min="1"
+          required
+          autofocus
+        >
+        <mat-icon matPrefix>local_shipping</mat-icon>
+        <mat-hint>Debe ser un número mayor a 0</mat-hint>
+        <mat-error *ngIf="cantidadPallets !== null && cantidadPallets <= 0">
+          La cantidad debe ser mayor a 0
+        </mat-error>
+      </mat-form-field>
+
+      <div class="ticket-details">
+        <div class="detail-item">
+          <strong>Rampla:</strong> {{ ticketFinalizarCarga?.rampla_asignada?.nombre || 'No asignada' }}
+        </div>
+        <div class="detail-item">
+          <strong>Tipo:</strong> {{ ticketFinalizarCarga?.rampla_asignada?.tipo_rampla || '-' }}
+        </div>
+        <div class="detail-item">
+          <strong>Muelle Planta:</strong> {{ ticketFinalizarCarga?.muelle_planta }}
+        </div>
+      </div>
+
+      <div class="alert-info">
+        <mat-icon>warning</mat-icon>
+        <span>Una vez confirmado, la rampla pasará a estado <strong>"Cargado - Espera Chofer"</strong> y se notificará al CD.</span>
+      </div>
+    </mat-card-content>
+
+    <mat-card-actions>
+      <button mat-button (click)="cerrarModalFinalizarCarga()" [disabled]="cargando">
+        Cancelar
+      </button>
+      <button 
+        mat-raised-button 
+        color="primary" 
+        (click)="confirmarFinalizarCarga()"
+        [disabled]="!cantidadPallets || cantidadPallets <= 0 || cargando"
+      >
+        <mat-spinner *ngIf="cargando" diameter="20"></mat-spinner>
+        <span *ngIf="!cargando">
+          <mat-icon>check_circle</mat-icon>
+          Finalizar Carga
+        </span>
+      </button>
+    </mat-card-actions>
+  </mat-card>
+</div>

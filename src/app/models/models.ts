@@ -66,6 +66,7 @@ export interface Ticket {
     cd_user_id: string | null;
     tipo_ticket: TipoTicket;
     cantidad_pallet: number;
+    cantidad_pallets: number | null; // Cantidad real de pallets cargados al finalizar
     muelle_planta: number;
     nombre_planta: string | null;
     fecha_creacion: string;

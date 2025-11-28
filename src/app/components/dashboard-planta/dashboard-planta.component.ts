@@ -58,6 +58,11 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
   ticketEnEdicion: Ticket | null = null;
   nuevoMuellePlanta: number = 0;
 
+  // Para modal de finalizar carga
+  mostrarModalFinalizarCarga = false;
+  ticketFinalizarCarga: Ticket | null = null;
+  cantidadPallets: number | null = null;
+
   cargando = false;
   mostrarFormulario = false;
   private subscriptions: Subscription[] = [];
@@ -293,16 +298,11 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
     this.cargando = true;
     try {
       console.log('Cambiando estado de ticket:', ticket.id, 'a:', nuevoEstado);
-      // Si es Fin de Carga, usar método específico que pasa automáticamente a "Cargado - Espera Chofer"
+      // Si es Fin de Carga, abrir modal para ingresar cantidad de pallets
       if (nuevoEstado === 'Fin de Carga') {
-        console.log('Llamando a finalizarCarga...');
-        await this.supabaseService.finalizarCarga(ticket.id);
-        console.log('finalizarCarga completado exitosamente');
-        this.notificationService.agregarNotificacion(
-          'Carga finalizada. Rampla en tránsito a bodega',
-          ticket.id,
-          'success'
-        );
+        this.cargando = false; // Desactivar loading para mostrar modal
+        this.abrirModalFinalizarCarga(ticket);
+        return;
       } else {
         await this.supabaseService.cambiarEstadoTicket(ticket.id, nuevoEstado);
       }
@@ -316,6 +316,62 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
         `Error al cambiar estado: ${error?.message || 'Error desconocido'}`,
         ticket.id,
         'error'
+      );
+    } finally {
+      this.cargando = false;
+    }
+  }
+
+  // ==================== MODAL FINALIZAR CARGA ====================
+
+  abrirModalFinalizarCarga(ticket: Ticket): void {
+    this.ticketFinalizarCarga = ticket;
+    this.cantidadPallets = null;
+    this.mostrarModalFinalizarCarga = true;
+  }
+
+  cerrarModalFinalizarCarga(): void {
+    this.mostrarModalFinalizarCarga = false;
+    this.ticketFinalizarCarga = null;
+    this.cantidadPallets = null;
+  }
+
+  async confirmarFinalizarCarga(): Promise<void> {
+    if (!this.ticketFinalizarCarga || !this.cantidadPallets || this.cantidadPallets <= 0) {
+      this.notificationService.agregarNotificacion(
+        'Debe ingresar una cantidad válida de pallets',
+        this.ticketFinalizarCarga?.id || 0,
+        'warning',
+        'media',
+        ['planta', 'admin']
+      );
+      return;
+    }
+
+    this.cargando = true;
+    try {
+      console.log('Finalizando carga con', this.cantidadPallets, 'pallets...');
+      await this.supabaseService.finalizarCarga(this.ticketFinalizarCarga.id, this.cantidadPallets);
+      console.log('Carga finalizada exitosamente');
+      
+      this.notificationService.agregarNotificacion(
+        `Carga finalizada con ${this.cantidadPallets} pallets. Rampla en tránsito a bodega`,
+        this.ticketFinalizarCarga.id,
+        'success',
+        'media',
+        ['planta', 'cd', 'admin']
+      );
+
+      this.cerrarModalFinalizarCarga();
+      await this.cargarMisTickets();
+    } catch (error: any) {
+      console.error('Error al finalizar carga:', error);
+      this.notificationService.agregarNotificacion(
+        `Error al finalizar carga: ${error?.message || 'Error desconocido'}`,
+        this.ticketFinalizarCarga.id,
+        'error',
+        'alta',
+        ['planta', 'admin']
       );
     } finally {
       this.cargando = false;

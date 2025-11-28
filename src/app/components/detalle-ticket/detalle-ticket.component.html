@@ -26,6 +26,13 @@
           <strong>Cantidad Pallets:</strong>
           <span>{{ ticket.cantidad_pallet }}</span>
         </div>
+        <div class="info-item" *ngIf="ticket.cantidad_pallets">
+          <strong>Pallets Cargados:</strong>
+          <span class="pallets-cargados">
+            <mat-icon>inventory_2</mat-icon>
+            {{ ticket.cantidad_pallets }}
+          </span>
+        </div>
         <div class="info-item">
           <strong>Muelle Planta:</strong>
           <span>{{ ticket.muelle_planta }}</span>

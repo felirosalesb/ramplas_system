@@ -349,6 +349,25 @@
     background: linear-gradient(135deg, #673ab7 0%, #512da8 100%);
 }
 
+/* Badge para cantidad de pallets */
+.badge-pallets {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    color: white;
+    border-radius: 16px;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.badge-pallets mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
 .estado-info {
     display: flex;
     flex-direction: column;

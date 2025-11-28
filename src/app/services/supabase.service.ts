@@ -691,21 +691,26 @@ export class SupabaseService {
         console.log('=== FIN FINALIZAR DESCARGA ===');
     }
 
-    async finalizarCarga(ticketId: number): Promise<void> {
+    async finalizarCarga(ticketId: number, cantidadPallets: number): Promise<void> {
         const user = this.getCurrentUser();
         if (!user) throw new Error('Usuario no autenticado');
 
-        console.log('Finalizando carga del ticket:', ticketId);
+        if (!cantidadPallets || cantidadPallets <= 0) {
+            throw new Error('La cantidad de pallets debe ser mayor a 0');
+        }
+
+        console.log('Finalizando carga del ticket:', ticketId, 'con', cantidadPallets, 'pallets');
 
         // Primero registrar "Fin de Carga"
         await this.registrarTiempo(ticketId, 'Fin de Carga', user.id);
 
-        // Luego cambiar automáticamente a "Cargado - Espera Chofer"
+        // Luego cambiar automáticamente a "Cargado - Espera Chofer" y registrar cantidad de pallets
         const { error } = await this.supabase
             .from('tickets')
             .update({
                 estado_actual: 'Cargado - Espera Chofer',
-                fecha_alerta_cd: new Date().toISOString() // Marcar cuándo llegó a bodega
+                fecha_alerta_cd: new Date().toISOString(), // Marcar cuándo llegó a bodega
+                cantidad_pallets: cantidadPallets // Registrar cantidad de pallets cargados
             })
             .eq('id', ticketId);
 
