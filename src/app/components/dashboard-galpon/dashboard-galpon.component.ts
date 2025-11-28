@@ -31,6 +31,7 @@ import { NavbarComponent } from '../navbar/navbar.component';
   styleUrls: ['./dashboard-galpon.component.css']
 })
 export class DashboardGalponComponent implements OnInit, OnDestroy {
+  ticketsSolicitudes: Ticket[] = []; // Nuevo: Solicitudes pendientes de aprobación
   ticketsEnvio: Ticket[] = [];
   ticketsPendientes: Ticket[] = [];
   cargando = false;
@@ -66,6 +67,11 @@ export class DashboardGalponComponent implements OnInit, OnDestroy {
       // Filtrar solo tickets de tipo 'Solicitar Pallets vacíos'
       const ticketsEnvio = todosTickets.filter(t => t.tipo_ticket === 'Solicitar Pallets vacíos');
       
+      // NUEVO: Solicitudes de planta esperando aprobación de galpón
+      this.ticketsSolicitudes = ticketsEnvio.filter(t => 
+        t.estado_actual === 'Pendiente Aprobación Galpón'
+      );
+      
       // Tickets que están en tránsito a galpón o ya en galpón
       this.ticketsPendientes = ticketsEnvio.filter(t => 
         ['Rampla Asignada', 'Rampla en Tránsito'].includes(t.estado_actual)
@@ -76,6 +82,7 @@ export class DashboardGalponComponent implements OnInit, OnDestroy {
         ['Rampla en Galpón', 'Carga Iniciada Galpón'].includes(t.estado_actual)
       );
 
+      console.log('Solicitudes pendientes:', this.ticketsSolicitudes.length);
       console.log('Tickets pendientes llegada:', this.ticketsPendientes.length);
       console.log('Tickets en carga:', this.ticketsEnvio.length);
     } catch (error) {
@@ -99,6 +106,28 @@ export class DashboardGalponComponent implements OnInit, OnDestroy {
         await this.cargarTickets();
       }
     });
+  }
+
+  async aprobarSolicitud(ticket: Ticket): Promise<void> {
+    this.cargando = true;
+    try {
+      await this.supabaseService.aprobarSolicitudGalpon(ticket.id);
+      this.notificationService.agregarNotificacion(
+        `Solicitud aprobada y enviada a CD para asignación - Ticket #${ticket.id}`,
+        ticket.id,
+        'success'
+      );
+      await this.cargarTickets();
+    } catch (error: any) {
+      console.error('Error al aprobar solicitud:', error);
+      this.notificationService.agregarNotificacion(
+        `Error al aprobar solicitud: ${error?.message || 'Error desconocido'}`,
+        ticket.id,
+        'error'
+      );
+    } finally {
+      this.cargando = false;
+    }
   }
 
   async confirmarLlegadaGalpon(ticket: Ticket): Promise<void> {

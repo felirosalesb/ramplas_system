@@ -111,6 +111,7 @@ export class DetalleTicketComponent implements OnInit {
   getIconoEstado(estado: string): string {
     const iconos: any = {
       'Solicitud Creada': 'add_circle',
+      'Pendiente Aprobación Galpón': 'pending_actions',
       'Pendiente Asignación': 'pending',
       'Rampla en Tránsito': 'local_shipping',
       'Rampla en Planta': 'factory',

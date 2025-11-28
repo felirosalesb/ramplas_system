@@ -182,7 +182,7 @@
           <button 
             mat-icon-button
             color="primary"
-            *ngIf="puedeEditarTicket(ticket)"
+            *ngIf="puedeEditarMuelle(ticket)"
             (click)="abrirModalEdicion(ticket)"
             [disabled]="cargando"
             matTooltip="Editar muelle de planta"
@@ -296,7 +296,7 @@
     <mat-card-content>
       <p class="info-text">
         <mat-icon>info</mat-icon>
-        Solo puedes editar el muelle de planta mientras la solicitud esté en estado <strong>"Pendiente Asignación"</strong>.
+        Solo puedes editar el muelle de planta mientras la solicitud esté en estado <strong>"Pendiente Aprobación Galpón"</strong> o <strong>"Pendiente Asignación"</strong>.
       </p>
 
       <mat-form-field appearance="outline" class="full-width">

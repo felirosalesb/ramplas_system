@@ -7,8 +7,79 @@
   </div>
 
   <!-- LOADING -->
-  <div *ngIf="cargando && ticketsPendientes.length === 0 && ticketsEnvio.length === 0" class="loading-container">
+  <div *ngIf="cargando && ticketsSolicitudes.length === 0 && ticketsPendientes.length === 0 && ticketsEnvio.length === 0" class="loading-container">
     <mat-spinner></mat-spinner>
+  </div>
+
+  <!-- NUEVO: SOLICITUDES PENDIENTES DE APROBACIÓN -->
+  <div class="tickets-section" *ngIf="ticketsSolicitudes.length > 0">
+    <h2>
+      <mat-icon>pending_actions</mat-icon>
+      Solicitudes Pendientes de Aprobación
+    </h2>
+    
+    <div class="tickets-grid">
+      <mat-card *ngFor="let ticket of ticketsSolicitudes" class="ticket-card solicitud-card">
+        <mat-card-header>
+          <mat-card-title>
+            Ticket #{{ ticket.id }}
+            <mat-chip color="warn">
+              Pendiente Aprobación
+            </mat-chip>
+          </mat-card-title>
+          <mat-card-subtitle>
+            {{ ticket.fecha_creacion | date:'dd/MM/yyyy HH:mm' }}
+          </mat-card-subtitle>
+        </mat-card-header>
+
+        <mat-card-content>
+          <div class="ticket-info">
+            <div class="info-item">
+              <mat-icon>inventory_2</mat-icon>
+              <span>{{ ticket.cantidad_pallet }} pallets solicitados</span>
+            </div>
+            <div class="info-item">
+              <mat-icon>factory</mat-icon>
+              <span>Muelle Planta: {{ ticket.muelle_planta }}</span>
+            </div>
+            <div class="info-item" *ngIf="ticket.nombre_planta">
+              <mat-icon>business</mat-icon>
+              <span>{{ ticket.nombre_planta }}</span>
+            </div>
+            <div class="info-item" *ngIf="ticket.observacion_planta">
+              <mat-icon>note</mat-icon>
+              <span>{{ ticket.observacion_planta }}</span>
+            </div>
+          </div>
+
+          <div class="alert-info">
+            <mat-icon>info</mat-icon>
+            <p>Esta planta solicita pallets vacíos.</p>
+          </div>
+        </mat-card-content>
+
+        <mat-card-actions>
+          <button 
+            mat-raised-button 
+            color="primary"
+            (click)="aprobarSolicitud(ticket)"
+            [disabled]="cargando"
+            matTooltip="Pedir rampla a CD"
+          >
+            <mat-icon>check_circle</mat-icon>
+            Solicitar Rampla
+          </button>
+
+          <button 
+            mat-button
+            (click)="verDetalleTicket(ticket)"
+          >
+            <mat-icon>info</mat-icon>
+            Ver Detalle
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </div>
   </div>
 
   <!-- TICKETS PENDIENTES DE LLEGADA -->
@@ -160,7 +231,7 @@
   </div>
 
   <!-- ESTADO VACÍO -->
-  <div *ngIf="!cargando && ticketsPendientes.length === 0 && ticketsEnvio.length === 0" class="empty-state">
+  <div *ngIf="!cargando && ticketsSolicitudes.length === 0 && ticketsPendientes.length === 0 && ticketsEnvio.length === 0" class="empty-state">
     <mat-icon>check_circle_outline</mat-icon>
     <h3>No hay tickets de envío pendientes</h3>
     <p>Todos los envíos han sido procesados</p>

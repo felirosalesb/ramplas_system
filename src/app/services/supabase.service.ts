@@ -103,14 +103,21 @@ export class SupabaseService {
 
         console.log('Datos del usuario:', userData);
 
+        // Determinar el estado inicial según el tipo de ticket
+        const estadoInicial = dto.tipo_ticket === 'Solicitar Pallets vacíos' 
+            ? 'Pendiente Aprobación Galpón'  // Va primero a Galpón para aprobación
+            : 'Pendiente Asignación';        // Retiro de producción va directo a CD
+
         const ticketData = {
             planta_user_id: user.id,
             tipo_ticket: dto.tipo_ticket,
             cantidad_pallet: dto.cantidad_pallet || 1,
             muelle_planta: dto.muelle_planta,
             nombre_planta: userData?.nombre_planta || null,
-            estado_actual: 'Pendiente Asignación',
-            fecha_alerta_cd: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+            estado_actual: estadoInicial,
+            fecha_alerta_cd: dto.tipo_ticket === 'Solicitar Pallets vacíos' 
+                ? null  // No alertar a CD aún, primero debe aprobar Galpón
+                : new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
         };
 
         console.log('Datos a insertar:', ticketData);
@@ -138,7 +145,7 @@ export class SupabaseService {
 
         console.log('Ticket creado, registrando tiempos...');
         await this.registrarTiempo(data.id, 'Solicitud Creada', user.id);
-        await this.registrarTiempo(data.id, 'Pendiente Asignación', user.id);
+        await this.registrarTiempo(data.id, estadoInicial, user.id);
         console.log('Tiempos registrados correctamente');
 
         return data;
@@ -269,8 +276,8 @@ export class SupabaseService {
         if (ticket.planta_user_id !== user.id) {
             throw new Error('No tiene permisos para editar este ticket');
         }
-        if (ticket.estado_actual !== 'Pendiente Asignación') {
-            throw new Error('Solo se pueden editar tickets en estado Pendiente Asignación');
+        if (!['Pendiente Aprobación Galpón', 'Pendiente Asignación'].includes(ticket.estado_actual)) {
+            throw new Error('Solo se pueden editar tickets en estado Pendiente Aprobación Galpón o Pendiente Asignación');
         }
 
         // Actualizar el muelle_planta
@@ -403,8 +410,8 @@ export class SupabaseService {
         if (ticket.planta_user_id !== user.id) {
             throw new Error('No tiene permisos para eliminar este ticket');
         }
-        if (ticket.estado_actual !== 'Pendiente Asignación') {
-            throw new Error('Solo se pueden eliminar tickets en estado Pendiente Asignación');
+        if (!['Pendiente Aprobación Galpón', 'Pendiente Asignación'].includes(ticket.estado_actual)) {
+            throw new Error('Solo se pueden eliminar tickets en estado Pendiente Aprobación Galpón o Pendiente Asignación');
         }
 
         // Eliminar registros de tiempos asociados
@@ -742,6 +749,35 @@ export class SupabaseService {
         }
 
         console.log('Carga finalizada, ticket en tránsito a bodega, CD notificado');
+    }
+
+    /**
+     * Galpón aprueba solicitud de pallets vacíos y la envía a CD para asignación de rampla
+     */
+    async aprobarSolicitudGalpon(ticketId: number): Promise<void> {
+        const user = this.getCurrentUser();
+        if (!user) throw new Error('Usuario no autenticado');
+
+        console.log('Galpón aprobando solicitud:', ticketId);
+
+        // Cambiar estado a "Pendiente Asignación" para que CD pueda asignar rampla
+        const { error } = await this.supabase
+            .from('tickets')
+            .update({
+                estado_actual: 'Pendiente Asignación',
+                fecha_alerta_cd: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+            })
+            .eq('id', ticketId)
+            .eq('estado_actual', 'Pendiente Aprobación Galpón'); // Validar que esté en estado correcto
+
+        if (error) {
+            console.error('Error al aprobar solicitud:', error);
+            throw error;
+        }
+
+        await this.registrarTiempo(ticketId, 'Pendiente Asignación', user.id);
+
+        console.log('Solicitud aprobada por Galpón, enviada a CD para asignación de rampla');
     }
 
     async finalizarCargaGalpon(ticketId: number): Promise<void> {

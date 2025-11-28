@@ -39,6 +39,7 @@ export interface Muelle {
 
 export type EstadoTicket =
     | 'Solicitud Creada'
+    | 'Pendiente Aprobación Galpón'  // Nuevo: Para solicitudes de pallets vacíos esperando aprobación de Galpón
     | 'Pendiente Asignación'
     | 'Rampla Asignada'
     // Estados compartidos (retiro y envío)
