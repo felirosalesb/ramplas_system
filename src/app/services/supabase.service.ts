@@ -789,12 +789,12 @@ export class SupabaseService {
         // Registrar "Fin de Carga" en galpón
         await this.registrarTiempo(ticketId, 'Fin de Carga', user.id);
 
-        // Cambiar automáticamente a "Rampla Cargada - Tránsito CD"
+        // Cambiar a "Rampla en Tránsito" para que vaya a la PLANTA solicitante
+        // (reutilizamos este estado para el viaje Galpón → Planta)
         const { error } = await this.supabase
             .from('tickets')
             .update({
-                estado_actual: 'Rampla Cargada - Tránsito CD',
-                fecha_alerta_cd: new Date().toISOString()
+                estado_actual: 'Rampla en Tránsito'
             })
             .eq('id', ticketId);
 
@@ -803,9 +803,9 @@ export class SupabaseService {
             throw error;
         }
 
-        await this.registrarTiempo(ticketId, 'Rampla Cargada - Tránsito CD', user.id);
+        await this.registrarTiempo(ticketId, 'Rampla en Tránsito', user.id);
 
-        // Notificar a planta (quien solicitó el envío) que la rampla va en camino
+        // Notificar a planta (quien solicitó los pallets) que la rampla va en camino
         const { data: ticket } = await this.supabase
             .from('tickets')
             .select('planta_user_id')
@@ -819,12 +819,12 @@ export class SupabaseService {
                     usuario_id: ticket.planta_user_id,
                     ticket_id: ticketId,
                     tipo: 'info',
-                    mensaje: `Rampla cargada en galpón. En tránsito a CD - Ticket #${ticketId}`,
+                    mensaje: `Rampla con pallets vacíos en tránsito hacia tu planta - Ticket #${ticketId}`,
                     leido: false
                 });
         }
 
-        console.log('Carga en galpón finalizada, rampla en tránsito a CD');
+        console.log('Carga en galpón finalizada, rampla en tránsito hacia planta solicitante');
     }
 
     async finalizarDescargaYLiberarRampla(ticketId: number): Promise<void> {
@@ -1011,7 +1011,7 @@ export class SupabaseService {
                 rampla_asignada:ramplas!rampla_asignada_id(*),
                 muelle_asignado:muelles!muelle_asignado_id(*)
             `)
-            .neq('estado_actual', 'Libre')
+            .neq('estado_actual', 'Libre')  // Excluir tickets finalizados
             .order('fecha_creacion', { ascending: false });
 
         if (error) {
@@ -1019,6 +1019,25 @@ export class SupabaseService {
             throw error;
         }
         console.log('Tickets activos obtenidos:', data?.length || 0);
+        return data || [];
+    }
+
+    async getTicketsHistorico(): Promise<Ticket[]> {
+        console.log('Consultando historial de tickets...');
+        const { data, error } = await this.supabase
+            .from('tickets')
+            .select(`
+                *,
+                rampla_asignada:ramplas!rampla_asignada_id(*)
+            `)
+            .eq('estado_actual', 'Libre')  // Solo tickets finalizados
+            .order('fecha_creacion', { ascending: false });
+
+        if (error) {
+            console.error('Error en getTicketsHistorico:', error);
+            throw error;
+        }
+        console.log('Tickets históricos obtenidos:', data?.length || 0);
         return data || [];
     }
 

@@ -82,11 +82,11 @@
     </div>
   </div>
 
-  <!-- TICKETS PENDIENTES DE LLEGADA -->
+  <!-- TICKETS PENDIENTES DE LLEGADA Y EN GALPÓN -->
   <div class="tickets-section" *ngIf="ticketsPendientes.length > 0">
     <h2>
       <mat-icon>local_shipping</mat-icon>
-      Ramplas en Tránsito
+      Ramplas Asignadas por CD
     </h2>
     
     <div class="tickets-grid">
@@ -107,24 +107,35 @@
           <div class="ticket-info">
             <div class="info-item">
               <mat-icon>inventory_2</mat-icon>
-              <span>{{ ticket.cantidad_pallet }} pallets</span>
+              <span>{{ ticket.cantidad_pallet }} pallets solicitados</span>
             </div>
             <div class="info-item">
               <mat-icon>factory</mat-icon>
-              <span>Muelle: {{ ticket.muelle_planta }}</span>
+              <span>Destino - Muelle Planta: {{ ticket.muelle_planta }}</span>
             </div>
             <div class="info-item" *ngIf="ticket.rampla_asignada">
               <mat-icon>local_shipping</mat-icon>
-              <span>{{ ticket.rampla_asignada.nombre }}</span>
+              <span>Rampla: {{ ticket.rampla_asignada.nombre }}</span>
             </div>
             <div class="info-item" *ngIf="ticket.nombre_planta">
               <mat-icon>business</mat-icon>
-              <span>{{ ticket.nombre_planta }}</span>
+              <span>Planta solicitante: {{ ticket.nombre_planta }}</span>
             </div>
+          </div>
+
+          <div class="alert-info" *ngIf="ticket.estado_actual === 'Rampla en Tránsito'">
+            <mat-icon>info</mat-icon>
+            <p>Rampla en camino hacia galpón. Confirma llegada cuando arribe.</p>
+          </div>
+
+          <div class="alert-info" *ngIf="ticket.estado_actual === 'Rampla en Galpón'">
+            <mat-icon>warehouse</mat-icon>
+            <p>Rampla lista para cargar con pallets vacíos.</p>
           </div>
         </mat-card-content>
 
         <mat-card-actions>
+          <!-- Botón: Confirmar llegada (solo si está en tránsito) -->
           <button 
             mat-raised-button 
             color="accent"
@@ -135,6 +146,19 @@
           >
             <mat-icon>check_circle</mat-icon>
             Confirmar Llegada
+          </button>
+
+          <!-- Botón: Iniciar carga (solo si está en galpón) -->
+          <button 
+            mat-raised-button 
+            color="primary"
+            *ngIf="puedeIniciarCarga(ticket)"
+            (click)="iniciarCargaGalpon(ticket)"
+            [disabled]="cargando"
+            matTooltip="Iniciar la carga de pallets vacíos"
+          >
+            <mat-icon>play_arrow</mat-icon>
+            Iniciar Carga
           </button>
 
           <button 
@@ -152,8 +176,8 @@
   <!-- TICKETS EN PROCESO DE CARGA -->
   <div class="tickets-section" *ngIf="ticketsEnvio.length > 0">
     <h2>
-      <mat-icon>warehouse</mat-icon>
-      En Proceso de Carga
+      <mat-icon>upload</mat-icon>
+      Cargando Pallets Vacíos
     </h2>
     
     <div class="tickets-grid">
@@ -161,8 +185,8 @@
         <mat-card-header>
           <mat-card-title>
             Ticket #{{ ticket.id }}
-            <mat-chip [color]="getEstadoColor(ticket.estado_actual)">
-              {{ ticket.estado_actual }}
+            <mat-chip color="primary">
+              Carga Iniciada
             </mat-chip>
           </mat-card-title>
           <mat-card-subtitle>
@@ -173,49 +197,40 @@
         <mat-card-content>
           <div class="ticket-info">
             <div class="info-item">
-              <mat-icon>label</mat-icon>
-              <span>{{ ticket.tipo_ticket }}</span>
-            </div>
-            <div class="info-item">
               <mat-icon>inventory_2</mat-icon>
-              <span>{{ ticket.cantidad_pallet }} pallets</span>
+              <span>{{ ticket.cantidad_pallet }} pallets vacíos a cargar</span>
             </div>
             <div class="info-item">
               <mat-icon>factory</mat-icon>
-              <span>Muelle: {{ ticket.muelle_planta }}</span>
+              <span>Destino - Muelle Planta: {{ ticket.muelle_planta }}</span>
             </div>
             <div class="info-item" *ngIf="ticket.rampla_asignada">
               <mat-icon>local_shipping</mat-icon>
-              <span>{{ ticket.rampla_asignada.nombre }}</span>
+              <span>Rampla: {{ ticket.rampla_asignada.nombre }}</span>
             </div>
             <div class="info-item" *ngIf="ticket.nombre_planta">
               <mat-icon>business</mat-icon>
-              <span>{{ ticket.nombre_planta }}</span>
+              <span>Planta solicitante: {{ ticket.nombre_planta }}</span>
             </div>
+          </div>
+
+          <div class="alert-info">
+            <mat-icon>info</mat-icon>
+            <p>Cargando pallets vacíos. Finaliza cuando esté lista para enviar a planta.</p>
           </div>
         </mat-card-content>
 
         <mat-card-actions>
           <button 
             mat-raised-button 
-            color="primary"
-            *ngIf="puedeIniciarCarga(ticket)"
-            (click)="iniciarCargaGalpon(ticket)"
-            [disabled]="cargando"
-          >
-            <mat-icon>play_arrow</mat-icon>
-            Iniciar Carga
-          </button>
-
-          <button 
-            mat-raised-button 
-            color="primary"
+            color="accent"
             *ngIf="puedeFinalizarCarga(ticket)"
             (click)="finalizarCargaGalpon(ticket)"
             [disabled]="cargando"
+            matTooltip="Finalizar carga y enviar rampla a planta"
           >
             <mat-icon>done</mat-icon>
-            Finalizar Carga
+            Finalizar Carga y Enviar
           </button>
 
           <button 
