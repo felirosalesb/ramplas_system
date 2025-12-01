@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Router, RouterOutlet } from '@angular/router';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { NotificacionesPanelComponent } from './components/notificaciones-panel/notificaciones-panel.component';
+import { SupabaseService } from './services/supabase.service';
 
 @Component({
   selector: 'app-root',
@@ -11,4 +12,12 @@ import { NotificacionesPanelComponent } from './components/notificaciones-panel/
 })
 export class AppComponent {
   title = 'ramplas-system';
+  constructor(private router: Router, private supabaseService: SupabaseService) {}
+
+  get mostrarNotificaciones(): boolean {
+    const url = this.router.url || '';
+    const esLogin = url.startsWith('/login') || url === '/';
+    const user = this.supabaseService.getCurrentUser();
+    return !!user && !esLogin;
+  }
 }

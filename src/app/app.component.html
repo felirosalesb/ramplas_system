@@ -1,4 +1,4 @@
 <router-outlet></router-outlet>
 
-<!-- Panel flotante de notificaciones: visible en toda la app -->
-<app-notificaciones-panel></app-notificaciones-panel>
+<!-- Panel flotante de notificaciones: visible solo si usuario autenticado y fuera de Login -->
+<app-notificaciones-panel *ngIf="mostrarNotificaciones"></app-notificaciones-panel>
