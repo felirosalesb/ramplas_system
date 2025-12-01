@@ -344,14 +344,16 @@ export class SupabaseService {
                     .from('ramplas')
                     .update({ 
                         estado: 'Libre',
-                        ticket_asignado_id: null 
+                        ticket_actual_id: null 
                     })
                     .eq('id', ticket.rampla_asignada_id);
 
                 if (ramplaError) {
                     console.error('⚠️ Error al liberar rampla:', ramplaError);
-                    // No lanzar error, solo advertencia
+                    console.error('⚠️ Detalle del error:', ramplaError);
+                    throw ramplaError; // Lanzar error para notificar el problema
                 }
+                console.log('✅ Rampla liberada correctamente:', ticket.rampla_asignada_id);
             }
 
             // Liberar el muelle CD asignado (si existe)
