@@ -1,5 +1,6 @@
 // src/app/services/notification.service.ts
 import { Injectable } from '@angular/core';
+import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { BehaviorSubject, Observable } from 'rxjs';
@@ -41,6 +42,7 @@ export class NotificationService {
 
     constructor(
         private snackBar: MatSnackBar,
+        private router: Router,
         private dialog: MatDialog,
         private http: HttpClient
     ) {
@@ -112,7 +114,7 @@ export class NotificationService {
 
         // Mostrar snackbar con duración según prioridad
         const duracion = this.getDuracionPorPrioridad(prioridad);
-        this.mostrarSnackbar(mensaje, tipo, duracion);
+        this.mostrarSnackbar(mensaje, tipo, duracion, icono);
 
         // Mostrar notificación nativa del navegador
         if (prioridad === 'alta' || prioridad === 'critica') {
@@ -121,6 +123,7 @@ export class NotificationService {
 
         // Reproducir sonido según prioridad
         this.reproducirSonido(prioridad);
+        this.vibrarSiMovil(prioridad);
     }
 
     marcarComoLeida(notificacionId: string): void {
@@ -215,13 +218,28 @@ export class NotificationService {
         return duraciones[prioridad];
     }
 
-    private mostrarSnackbar(mensaje: string, tipo: string, duracion: number = 5000): void {
-        this.snackBar.open(mensaje, 'Cerrar', {
-            duration: duracion,
+    private mostrarSnackbar(
+        mensaje: string,
+        tipo: 'info' | 'warning' | 'success' | 'error',
+        duracion: number = 5000,
+        icono?: string
+    ): void {
+        const defaultIconos: Record<typeof tipo, string> = {
+            success: '✅',
+            warning: '⚠️',
+            error: '❌',
+            info: 'ℹ️'
+        } as const;
+        const iconoMostrar = icono || defaultIconos[tipo];
+        const texto = `${iconoMostrar} ${mensaje}`;
+        const ref = this.snackBar.open(texto, 'Cerrar', {
+            duration: duracion === 0 ? undefined : duracion,
             horizontalPosition: 'end',
             verticalPosition: 'top',
-            panelClass: [`snackbar-${tipo}`]
+            panelClass: [`snackbar-${tipo}`, 'snackbar-elevated']
         });
+        // Cerrar sin navegación ni acciones
+        ref.onAction().subscribe(() => ref.dismiss());
     }
 
     private reproducirSonido(prioridad: PrioridadNotificacion = 'media'): void {
@@ -232,12 +250,27 @@ export class NotificationService {
             media: 'assets/sounds/notification.mp3',
             baja: 'assets/sounds/notification.mp3'
         };
+        try {
+            const audio = new Audio(sonidos[prioridad]);
+            audio.volume = prioridad === 'critica' ? 0.7 : prioridad === 'alta' ? 0.5 : 0.3;
+            void audio.play();
+        } catch {
+            // Silenciar errores por bloqueo del navegador o falta de archivo
+        }
+    }
 
-        const audio = new Audio(sonidos[prioridad]);
-        audio.volume = prioridad === 'critica' ? 0.7 : prioridad === 'alta' ? 0.5 : 0.3;
-        audio.play().catch(() => {
-            // Ignorar si el navegador bloquea el sonido
-        });
+    private vibrarSiMovil(prioridad: PrioridadNotificacion = 'media'): void {
+        try {
+            if (navigator?.vibrate) {
+                if (prioridad === 'critica') {
+                    navigator.vibrate([80, 60, 80, 60, 120]);
+                } else if (prioridad === 'alta') {
+                    navigator.vibrate([60, 40, 60]);
+                } else if (prioridad === 'media') {
+                    navigator.vibrate(40);
+                }
+            }
+        } catch {}
     }
 
     // ==================== MICROSOFT TEAMS ====================
@@ -307,9 +340,8 @@ export class NotificationService {
             ticketId,
             'info',
             'alta',
-            ['cd', 'admin'], // Solo para CD y Admin
-            '🚨',
-            { texto: 'Ver Ticket', url: `/tickets/${ticketId}` }
+            ['cd', 'admin'],
+            '🚨'
         );
         this.enviarNotificacionTeams(
             '🚨 Nueva Solicitud de Retiro',
@@ -325,9 +357,8 @@ export class NotificationService {
             ticketId,
             'success',
             'media',
-            ['planta', 'admin'], // Solo para Planta y Admin
-            '✅',
-            { texto: 'Ver Ticket', url: `/tickets/${ticketId}` }
+            ['planta', 'admin'],
+            '✅'
         );
         this.enviarNotificacionTeams(
             '✅ Rampla en Tránsito',
@@ -343,9 +374,8 @@ export class NotificationService {
             ticketId,
             'success',
             'media',
-            ['planta', 'cd', 'admin'], // Para Planta, CD y Admin
-            '📦',
-            { texto: 'Ver Ticket', url: `/tickets/${ticketId}` }
+            ['planta', 'cd', 'admin'],
+            '📦'
         );
         this.enviarNotificacionTeams(
             '📦 Carga Finalizada',
@@ -361,9 +391,8 @@ export class NotificationService {
             ticketId,
             'warning',
             'critica',
-            ['cd', 'admin'], // Solo para CD y Admin (crítico)
-            '⚠️',
-            { texto: 'Asignar Ahora', url: `/tickets/${ticketId}` }
+            ['cd', 'admin'],
+            '⚠️'
         );
         this.enviarNotificacionTeams(
             '⏰ Alerta de Tiempo',
@@ -379,9 +408,8 @@ export class NotificationService {
             ticketId,
             'error',
             'alta',
-            ['planta', 'cd', 'admin'], // Para todos los roles relevantes
-            '❌',
-            { texto: 'Ver Detalles', url: `/tickets/${ticketId}` }
+            ['planta', 'cd', 'admin'],
+            '❌'
         );
         this.enviarNotificacionTeams(
             '❌ Rampla Rechazada',

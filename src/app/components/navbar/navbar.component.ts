@@ -30,6 +30,7 @@ export class NavbarComponent implements OnInit {
   notificacionesCount = 0;
   userEmail: string = '';
   userRole: string = '';
+  compactMode = false;
 
   constructor(
     private supabaseService: SupabaseService,
@@ -50,6 +51,11 @@ export class NavbarComponent implements OnInit {
     this.notificationService.notificaciones$.subscribe(notificaciones => {
       this.notificacionesCount = notificaciones.filter(n => !n.leido).length;
     });
+
+    // Cargar preferencia de densidad compacta
+    const saved = localStorage.getItem('compactDensity');
+    this.compactMode = saved === '1';
+    this.applyCompactDensity();
   }
 
   // Mostrar Monitor solo para CD y Admin
@@ -91,5 +97,20 @@ export class NavbarComponent implements OnInit {
   async cerrarSesion() {
     await this.supabaseService.signOut();
     this.router.navigate(['/login']);
+  }
+
+  toggleCompactMode() {
+    this.compactMode = !this.compactMode;
+    localStorage.setItem('compactDensity', this.compactMode ? '1' : '0');
+    this.applyCompactDensity();
+  }
+
+  private applyCompactDensity() {
+    const body = document.body;
+    if (this.compactMode) {
+      body.classList.add('compact-density');
+    } else {
+      body.classList.remove('compact-density');
+    }
   }
 }

@@ -90,6 +90,16 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
   // Contadores por estado de ramplas
   contadoresEstadoRamplas: { [estado: string]: number } = {};
 
+  // Navegación por pestañas (swipeable)
+  selectedTabIndex = 0;
+  private touchStartX: number | null = null;
+  private touchStartY: number | null = null;
+  private touchDeltaX: number = 0;
+  private touchDeltaY: number = 0;
+  private readonly swipeThreshold = 60; // px
+  private readonly verticalTolerance = 40; // px
+  private readonly totalTabs = 3;
+
   constructor(
     private router: Router,
     private supabaseService: SupabaseService,
@@ -118,6 +128,60 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
     this.subscriptions.forEach(sub => sub.unsubscribe());
     if (this.realtimeChannel) {
       this.realtimeChannel.unsubscribe();
+    }
+  }
+
+  // =========================
+  // Swipe Tabs Handlers
+  // =========================
+  onTabChange(index: number) {
+    this.selectedTabIndex = index;
+  }
+
+  onTouchStart(event: TouchEvent) {
+    if (!event.touches || event.touches.length === 0) return;
+    this.touchStartX = event.touches[0].clientX;
+    this.touchStartY = event.touches[0].clientY;
+    this.touchDeltaX = 0;
+    this.touchDeltaY = 0;
+  }
+
+  onTouchMove(event: TouchEvent) {
+    if (this.touchStartX === null || this.touchStartY === null) return;
+    const touch = event.touches[0];
+    this.touchDeltaX = touch.clientX - this.touchStartX;
+    this.touchDeltaY = touch.clientY - this.touchStartY;
+  }
+
+  onTouchEnd() {
+    if (this.touchStartX === null) return;
+    const absX = Math.abs(this.touchDeltaX);
+    const absY = Math.abs(this.touchDeltaY);
+
+    // Solo considerar swipe horizontal predominante
+    if (absX > this.swipeThreshold && absX > absY + this.verticalTolerance) {
+      if (this.touchDeltaX < 0) {
+        this.nextTab();
+      } else {
+        this.prevTab();
+      }
+    }
+
+    this.touchStartX = null;
+    this.touchStartY = null;
+    this.touchDeltaX = 0;
+    this.touchDeltaY = 0;
+  }
+
+  private nextTab() {
+    if (this.selectedTabIndex < this.totalTabs - 1) {
+      this.selectedTabIndex += 1;
+    }
+  }
+
+  private prevTab() {
+    if (this.selectedTabIndex > 0) {
+      this.selectedTabIndex -= 1;
     }
   }
 
@@ -734,7 +798,12 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
       width: '900px',
       maxWidth: '95vw',
       maxHeight: '90vh',
-      panelClass: 'detalle-ticket-dialog'
+      panelClass: 'detalle-ticket-dialog',
+      disableClose: false,
+      hasBackdrop: true,
+      autoFocus: false,
+      closeOnNavigation: true,
+      restoreFocus: false
     });
   }
 }

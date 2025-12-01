@@ -38,6 +38,14 @@ export class DetalleTicketComponent implements OnInit {
   esModal = false;
   displayedColumns: string[] = ['estado', 'fecha', 'tiempo'];
 
+  // Swipe-to-close en móvil
+  private touchStartY: number | null = null;
+  private touchStartX: number | null = null;
+  private deltaY: number = 0;
+  private deltaX: number = 0;
+  private readonly closeSwipeThreshold = 100; // px
+  private readonly horizontalTolerance = 60; // px
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -82,6 +90,35 @@ export class DetalleTicketComponent implements OnInit {
 
     console.log('Cargando detalle para ticket ID:', id);
     await this.cargarDetalle(id);
+  }
+
+  // Gestos táctiles para cerrar en móvil
+  onTouchStart(event: TouchEvent) {
+    if (!this.esModal || !event.touches || event.touches.length === 0) return;
+    this.touchStartY = event.touches[0].clientY;
+    this.touchStartX = event.touches[0].clientX;
+    this.deltaY = 0;
+    this.deltaX = 0;
+  }
+
+  onTouchMove(event: TouchEvent) {
+    if (this.touchStartY === null || this.touchStartX === null) return;
+    const touch = event.touches[0];
+    this.deltaY = touch.clientY - this.touchStartY;
+    this.deltaX = touch.clientX - this.touchStartX;
+  }
+
+  onTouchEnd() {
+    if (this.touchStartY === null) return;
+    const absY = Math.abs(this.deltaY);
+    const absX = Math.abs(this.deltaX);
+    if (this.deltaY > this.closeSwipeThreshold && absY > absX + this.horizontalTolerance) {
+      this.cerrarModal();
+    }
+    this.touchStartY = null;
+    this.touchStartX = null;
+    this.deltaY = 0;
+    this.deltaX = 0;
   }
 
   async cargarDetalle(ticketId: number) {
@@ -134,7 +171,14 @@ export class DetalleTicketComponent implements OnInit {
     return 'info';
   }
 
-  volver() {
+  volver(event?: Event) {
+    if (event) {
+      event.preventDefault();
+      if ((event as any).stopImmediatePropagation) {
+        (event as any).stopImmediatePropagation();
+      }
+      event.stopPropagation();
+    }
     if (this.esModal && this.dialogRef) {
       this.dialogRef.close();
     } else {
@@ -158,7 +202,14 @@ export class DetalleTicketComponent implements OnInit {
     }
   }
 
-  cerrarModal() {
+  cerrarModal(event?: Event) {
+    if (event) {
+      event.preventDefault();
+      if ((event as any).stopImmediatePropagation) {
+        (event as any).stopImmediatePropagation();
+      }
+      event.stopPropagation();
+    }
     if (this.dialogRef) {
       this.dialogRef.close();
     }

@@ -78,19 +78,8 @@
             </div>
           </div>
 
-          <!-- Acciones -->
+          <!-- Controles: solo lectura/eliminar -->
           <div class="notif-acciones">
-            <!-- Botón de acción principal -->
-            <button 
-              *ngIf="notif.accion"
-              mat-raised-button 
-              color="primary"
-              class="btn-accion"
-              (click)="ejecutarAccion(notif)">
-              {{ notif.accion.texto }}
-            </button>
-
-            <!-- Botones de control -->
             <div class="notif-controles">
               <button 
                 mat-icon-button 

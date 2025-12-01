@@ -243,3 +243,69 @@
         gap: 8px;
     }
 }
+
+@media (max-width: 480px) {
+    .detalle-container {
+        padding: 12px;
+    }
+
+    .detalle-container.modal-content {
+        height: 100vh;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .pallets-cargados {
+        font-size: 16px;
+        padding: 6px 12px;
+    }
+
+    .timeline-content {
+        padding: 12px;
+    }
+
+    .timeline-header h3 {
+        font-size: 16px;
+    }
+
+    .detail-item {
+        font-size: 13px;
+    }
+}
+
+/* Header pegajoso en modal para móvil */
+.modal-content .header {
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 2;
+    padding: 12px 0;
+}
+
+/* Barra inferior de cierre en móvil (solo modal) */
+.mobile-modal-actions {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: none;
+    justify-content: center;
+    padding: 8px 12px;
+    background: #ffffff;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+    z-index: 1100; /* sobre la barra inferior global */
+}
+
+.mobile-modal-actions .safe-area-spacer {
+    height: env(safe-area-inset-bottom, 0);
+}
+
+@media (max-width: 768px) {
+    .mobile-modal-actions { display: flex; }
+    .mobile-modal-actions button { min-width: 200px; }
+}

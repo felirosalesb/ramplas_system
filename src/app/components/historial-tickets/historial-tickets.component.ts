@@ -166,13 +166,43 @@ export class HistorialTicketsComponent implements OnInit {
     this.aplicarFiltros();
   }
 
+  // Limpieza rápida por chip
+  clearBusqueda(): void {
+    this.busqueda = '';
+    this.aplicarFiltros();
+  }
+
+  clearFechaInicio(): void {
+    this.fechaInicio = null;
+    this.aplicarFiltros();
+  }
+
+  clearFechaFin(): void {
+    this.fechaFin = null;
+    this.aplicarFiltros();
+  }
+
+  clearPlanta(): void {
+    this.plantaFiltro = '';
+    this.aplicarFiltros();
+  }
+
+  clearTipo(): void {
+    this.tipoFiltro = '';
+    this.aplicarFiltros();
+  }
+
   verDetalleTicket(ticket: Ticket): void {
     this.dialog.open(DetalleTicketComponent, {
       data: { ticketId: ticket.id },
       width: '900px',
       maxWidth: '95vw',
       maxHeight: '90vh',
-      panelClass: 'detalle-ticket-dialog'
+      panelClass: 'detalle-ticket-dialog',
+      disableClose: false,
+      hasBackdrop: true,
+      autoFocus: false,
+      closeOnNavigation: true
     });
   }
 

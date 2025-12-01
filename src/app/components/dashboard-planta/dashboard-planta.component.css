@@ -411,3 +411,17 @@ mat-card-actions button {
 .modal-finalizar mat-card-actions button {
     min-width: 120px;
 }
+
+/* FAB móvil para crear solicitud */
+.fab-add {
+    position: fixed;
+    right: 16px;
+    bottom: 88px; /* por encima de la barra inferior */
+    z-index: 1001;
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .fab-add { display: inline-flex; }
+    .header button { display: none; }
+}
