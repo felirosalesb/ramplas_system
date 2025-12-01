@@ -160,6 +160,7 @@ export class MonitorRamplasComponent implements OnInit, OnDestroy {
     if (!estado) return '';
 
     const clasesEstado: { [key: string]: string } = {
+      'Pendiente Aprobación Galpón': 'estado-pendiente',
       'Pendiente Asignación': 'estado-pendiente',
       'Rampla en Tránsito': 'estado-asignada',
       'Rampla en Planta': 'estado-planta',
@@ -179,6 +180,7 @@ export class MonitorRamplasComponent implements OnInit, OnDestroy {
       'Libre': 'check_circle',
       'En Servicio': 'local_shipping',
       'Inactiva': 'block',
+      'Pendiente Aprobación Galpón': 'pending_actions',
       'Pendiente Asignación': 'pending',
       'Rampla en Tránsito': 'assignment_turned_in',
       'Rampla en Planta': 'factory',

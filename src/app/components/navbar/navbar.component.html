@@ -30,6 +30,12 @@
         <span class="button-text">Reportes</span>
       </button>
 
+      <!-- Historial para todos los roles -->
+      <button mat-button routerLink="/historial" routerLinkActive="active">
+        <mat-icon>history</mat-icon>
+        <span class="button-text">Historial</span>
+      </button>
+
       <!-- Notificaciones -->
       <button mat-icon-button (click)="irANotificaciones()">
         <mat-icon [matBadge]="notificacionesCount" matBadgeColor="warn" [matBadgeHidden]="notificacionesCount === 0">

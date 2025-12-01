@@ -9,6 +9,7 @@ import { DetalleTicketComponent } from './components/detalle-ticket/detalle-tick
 import { NotificacionesComponent } from './components/notificaciones/notificaciones.component';
 import { GestionMuellesComponent } from './components/gestion-muelles/gestion-muelles.component';
 import { ReportesCdComponent } from './components/reportes-cd/reportes-cd.component';
+import { HistorialTicketsComponent } from './components/historial-tickets/historial-tickets.component';
 import { AuthGuard } from './guards/auth.guard';
 import { DashboardAdminComponent } from './components/dashboard-admin/dashboard-admin.component';
 
@@ -70,6 +71,11 @@ export const routes: Routes = [
     {
         path: 'reportes-cd',
         component: ReportesCdComponent,
+        canActivate: [AuthGuard]
+    },
+    {
+        path: 'historial',
+        component: HistorialTicketsComponent,
         canActivate: [AuthGuard]
     },
     {

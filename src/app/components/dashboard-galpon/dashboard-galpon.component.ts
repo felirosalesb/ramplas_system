@@ -9,10 +9,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { SupabaseService } from '../../services/supabase.service';
 import { NotificationService } from '../../services/notification.service';
 import { Ticket } from '../../models/models';
 import { NavbarComponent } from '../navbar/navbar.component';
+import { DetalleTicketComponent } from '../detalle-ticket/detalle-ticket.component';
 
 @Component({
   selector: 'app-dashboard-galpon',
@@ -25,12 +27,14 @@ import { NavbarComponent } from '../navbar/navbar.component';
     MatProgressSpinnerModule,
     MatChipsModule,
     MatTooltipModule,
+    MatDialogModule,
     NavbarComponent
   ],
   templateUrl: './dashboard-galpon.component.html',
   styleUrls: ['./dashboard-galpon.component.css']
 })
 export class DashboardGalponComponent implements OnInit, OnDestroy {
+  ticketsSolicitudes: Ticket[] = []; // Nuevo: Solicitudes pendientes de aprobación
   ticketsEnvio: Ticket[] = [];
   ticketsPendientes: Ticket[] = [];
   cargando = false;
@@ -40,7 +44,8 @@ export class DashboardGalponComponent implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     private supabaseService: SupabaseService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private dialog: MatDialog
   ) { }
 
   async ngOnInit(): Promise<void> {
@@ -66,16 +71,23 @@ export class DashboardGalponComponent implements OnInit, OnDestroy {
       // Filtrar solo tickets de tipo 'Solicitar Pallets vacíos'
       const ticketsEnvio = todosTickets.filter(t => t.tipo_ticket === 'Solicitar Pallets vacíos');
       
-      // Tickets que están en tránsito a galpón o ya en galpón
-      this.ticketsPendientes = ticketsEnvio.filter(t => 
-        ['Rampla Asignada', 'Rampla en Tránsito'].includes(t.estado_actual)
+      // PASO 1: Solicitudes de planta esperando aprobación de galpón
+      this.ticketsSolicitudes = ticketsEnvio.filter(t => 
+        t.estado_actual === 'Pendiente Aprobación Galpón'
       );
+      
+      // PASO 2: Ramplas que CD ya asignó y están en tránsito hacia galpón
+      // O que ya llegaron al galpón esperando confirmación
+      // IMPORTANTE: Solo mostrar si están llegando POR PRIMERA VEZ al galpón
+      // (excluir las que ya se cargaron y van hacia planta)
+      this.ticketsPendientes = await this.filtrarTicketsPendientesGalpon(ticketsEnvio);
 
-      // Tickets en proceso de carga en galpón
+      // PASO 3: Tickets en proceso de carga en galpón con pallets vacíos
       this.ticketsEnvio = ticketsEnvio.filter(t => 
-        ['Rampla en Galpón', 'Carga Iniciada Galpón'].includes(t.estado_actual)
+        t.estado_actual === 'Carga Iniciada Galpón'
       );
 
+      console.log('Solicitudes pendientes:', this.ticketsSolicitudes.length);
       console.log('Tickets pendientes llegada:', this.ticketsPendientes.length);
       console.log('Tickets en carga:', this.ticketsEnvio.length);
     } catch (error) {
@@ -101,9 +113,32 @@ export class DashboardGalponComponent implements OnInit, OnDestroy {
     });
   }
 
+  async aprobarSolicitud(ticket: Ticket): Promise<void> {
+    this.cargando = true;
+    try {
+      await this.supabaseService.aprobarSolicitudGalpon(ticket.id);
+      this.notificationService.agregarNotificacion(
+        `Solicitud aprobada y enviada a CD para asignación - Ticket #${ticket.id}`,
+        ticket.id,
+        'success'
+      );
+      await this.cargarTickets();
+    } catch (error: any) {
+      console.error('Error al aprobar solicitud:', error);
+      this.notificationService.agregarNotificacion(
+        `Error al aprobar solicitud: ${error?.message || 'Error desconocido'}`,
+        ticket.id,
+        'error'
+      );
+    } finally {
+      this.cargando = false;
+    }
+  }
+
   async confirmarLlegadaGalpon(ticket: Ticket): Promise<void> {
     this.cargando = true;
     try {
+      // Confirmar que la rampla llegó al galpón
       await this.supabaseService.cambiarEstadoTicket(ticket.id, 'Rampla en Galpón');
       this.notificationService.agregarNotificacion(
         `Rampla confirmada en galpón - Ticket #${ticket.id}`,
@@ -113,8 +148,6 @@ export class DashboardGalponComponent implements OnInit, OnDestroy {
       await this.cargarTickets();
     } catch (error: any) {
       console.error('Error al confirmar llegada:', error);
-      console.error('Error mensaje:', error?.message);
-      console.error('Error completo:', JSON.stringify(error, null, 2));
       this.notificationService.agregarNotificacion(
         `Error al confirmar llegada: ${error?.message || 'Error desconocido'}`,
         ticket.id,
@@ -174,7 +207,13 @@ export class DashboardGalponComponent implements OnInit, OnDestroy {
   }
 
   verDetalleTicket(ticket: Ticket): void {
-    this.router.navigate(['/detalle-ticket', ticket.id]);
+    this.dialog.open(DetalleTicketComponent, {
+      data: { ticketId: ticket.id },
+      width: '900px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
+      panelClass: 'detalle-ticket-dialog'
+    });
   }
 
   getEstadoColor(estado: string): string {
@@ -189,7 +228,8 @@ export class DashboardGalponComponent implements OnInit, OnDestroy {
   }
 
   puedeConfirmarLlegada(ticket: Ticket): boolean {
-    return ['Rampla Asignada', 'Rampla en Tránsito'].includes(ticket.estado_actual);
+    // Solo puede confirmar llegada si la rampla está en tránsito hacia galpón
+    return ticket.estado_actual === 'Rampla en Tránsito';
   }
 
   puedeIniciarCarga(ticket: Ticket): boolean {
@@ -198,5 +238,41 @@ export class DashboardGalponComponent implements OnInit, OnDestroy {
 
   puedeFinalizarCarga(ticket: Ticket): boolean {
     return ticket.estado_actual === 'Carga Iniciada Galpón';
+  }
+
+  /**
+   * Filtra tickets que están llegando al galpón POR PRIMERA VEZ
+   * (excluye los que ya fueron cargados y van hacia planta)
+   */
+  private async filtrarTicketsPendientesGalpon(ticketsEnvio: Ticket[]): Promise<Ticket[]> {
+    const candidatos = ticketsEnvio.filter(t => 
+      ['Rampla en Tránsito', 'Rampla en Galpón'].includes(t.estado_actual)
+    );
+
+    // Para cada candidato, verificar si ya pasó por 'Carga Iniciada Galpón'
+    const resultados = await Promise.all(
+      candidatos.map(async (ticket) => {
+        try {
+          const registros = await this.supabaseService['supabase']
+            .from('registros_tiempo')
+            .select('estado_registrado')
+            .eq('ticket_id', ticket.id)
+            .eq('estado_registrado', 'Carga Iniciada Galpón');
+
+          // Si ya tiene registro de carga iniciada, significa que va hacia planta
+          // (no debe mostrarse aquí)
+          if (registros.data && registros.data.length > 0) {
+            return null; // Excluir este ticket
+          }
+          return ticket; // Incluir este ticket
+        } catch (error) {
+          console.error('Error al verificar historial:', error);
+          return ticket; // En caso de error, incluir por seguridad
+        }
+      })
+    );
+
+    // Filtrar nulls y retornar
+    return resultados.filter((t): t is Ticket => t !== null);
   }
 }

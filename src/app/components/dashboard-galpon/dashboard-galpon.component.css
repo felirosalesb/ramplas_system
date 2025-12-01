@@ -55,6 +55,35 @@
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
 }
 
+.solicitud-card {
+  border-left: 4px solid #ff9800;
+  background: linear-gradient(to right, #fff9f0 0%, #ffffff 100%);
+}
+
+.alert-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background-color: #e3f2fd;
+  border-radius: 4px;
+  margin-top: 16px;
+  border-left: 3px solid #2196F3;
+}
+
+.alert-info mat-icon {
+  color: #2196F3;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.alert-info p {
+  margin: 0;
+  font-size: 13px;
+  color: #1976d2;
+}
+
 .ticket-card mat-card-title {
   display: flex;
   justify-content: space-between;

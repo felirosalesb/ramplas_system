@@ -1,0 +1,190 @@
+<app-navbar></app-navbar>
+
+<div class="historial-container">
+  <div class="header">
+    <h1>
+      <mat-icon>history</mat-icon>
+      Historial de Tickets
+    </h1>
+    <p>Tickets finalizados con estado 'Libre'</p>
+  </div>
+
+  <!-- FILTROS -->
+  <mat-card class="filtros-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>filter_list</mat-icon>
+        Filtros
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="filtros-grid">
+        <!-- Búsqueda rápida -->
+        <mat-form-field appearance="outline">
+          <mat-label>Buscar por ID o Rampla</mat-label>
+          <input 
+            matInput 
+            [(ngModel)]="busqueda" 
+            (ngModelChange)="aplicarFiltros()"
+            placeholder="Ej: 123 o R-001"
+          >
+          <mat-icon matPrefix>search</mat-icon>
+        </mat-form-field>
+
+        <!-- Fecha inicio -->
+        <mat-form-field appearance="outline">
+          <mat-label>Fecha Inicio</mat-label>
+          <input 
+            matInput 
+            [matDatepicker]="pickerInicio" 
+            [(ngModel)]="fechaInicio"
+            (ngModelChange)="aplicarFiltros()"
+          >
+          <mat-datepicker-toggle matSuffix [for]="pickerInicio"></mat-datepicker-toggle>
+          <mat-datepicker #pickerInicio></mat-datepicker>
+        </mat-form-field>
+
+        <!-- Fecha fin -->
+        <mat-form-field appearance="outline">
+          <mat-label>Fecha Fin</mat-label>
+          <input 
+            matInput 
+            [matDatepicker]="pickerFin" 
+            [(ngModel)]="fechaFin"
+            (ngModelChange)="aplicarFiltros()"
+          >
+          <mat-datepicker-toggle matSuffix [for]="pickerFin"></mat-datepicker-toggle>
+          <mat-datepicker #pickerFin></mat-datepicker>
+        </mat-form-field>
+
+        <!-- Filtro por planta (solo CD lo ve) -->
+        <mat-form-field appearance="outline" *ngIf="rolUsuario === 'cd'">
+          <mat-label>Planta</mat-label>
+          <mat-select [(ngModel)]="plantaFiltro" (ngModelChange)="aplicarFiltros()">
+            <mat-option value="">Todas</mat-option>
+            <mat-option *ngFor="let planta of plantas" [value]="planta">
+              {{ planta }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Filtro por tipo -->
+        <mat-form-field appearance="outline">
+          <mat-label>Tipo de Ticket</mat-label>
+          <mat-select [(ngModel)]="tipoFiltro" (ngModelChange)="aplicarFiltros()">
+            <mat-option value="">Todos</mat-option>
+            <mat-option *ngFor="let tipo of tiposTicket" [value]="tipo">
+              {{ tipo }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Botón limpiar -->
+        <button 
+          mat-raised-button 
+          color="warn"
+          (click)="limpiarFiltros()"
+          class="btn-limpiar"
+        >
+          <mat-icon>clear</mat-icon>
+          Limpiar Filtros
+        </button>
+      </div>
+
+      <div class="resultados-info">
+        <mat-chip>
+          <mat-icon>info</mat-icon>
+          {{ ticketsFiltrados.length }} tickets encontrados
+        </mat-chip>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- LOADING -->
+  <div *ngIf="cargando" class="loading-container">
+    <mat-spinner></mat-spinner>
+  </div>
+
+  <!-- TABLA -->
+  <mat-card class="tabla-card" *ngIf="!cargando">
+    <mat-card-content>
+      <div class="table-container">
+        <table mat-table [dataSource]="ticketsFiltrados" class="tickets-table">
+
+          <!-- ID Column -->
+          <ng-container matColumnDef="id">
+            <th mat-header-cell *matHeaderCellDef>ID</th>
+            <td mat-cell *matCellDef="let ticket">
+              <strong>#{{ ticket.id }}</strong>
+            </td>
+          </ng-container>
+
+          <!-- Tipo Column -->
+          <ng-container matColumnDef="tipo_ticket">
+            <th mat-header-cell *matHeaderCellDef>Tipo</th>
+            <td mat-cell *matCellDef="let ticket">
+              <mat-chip [color]="getTipoColor(ticket.tipo_ticket)">
+                {{ ticket.tipo_ticket }}
+              </mat-chip>
+            </td>
+          </ng-container>
+
+          <!-- Planta Column -->
+          <ng-container matColumnDef="nombre_planta">
+            <th mat-header-cell *matHeaderCellDef>Planta</th>
+            <td mat-cell *matCellDef="let ticket">
+              {{ ticket.nombre_planta || 'N/A' }}
+            </td>
+          </ng-container>
+
+          <!-- Fecha Column -->
+          <ng-container matColumnDef="fecha_creacion">
+            <th mat-header-cell *matHeaderCellDef>Fecha Creación</th>
+            <td mat-cell *matCellDef="let ticket">
+              {{ ticket.fecha_creacion | date:'dd/MM/yyyy HH:mm' }}
+            </td>
+          </ng-container>
+
+          <!-- Rampla Column -->
+          <ng-container matColumnDef="rampla">
+            <th mat-header-cell *matHeaderCellDef>Rampla</th>
+            <td mat-cell *matCellDef="let ticket">
+              <span *ngIf="ticket.rampla_asignada">
+                <mat-icon class="icon-inline">local_shipping</mat-icon>
+                {{ ticket.rampla_asignada.nombre }}
+              </span>
+              <span *ngIf="!ticket.rampla_asignada" class="text-muted">
+                Sin rampla
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Acciones Column -->
+          <ng-container matColumnDef="acciones">
+            <th mat-header-cell *matHeaderCellDef>Acciones</th>
+            <td mat-cell *matCellDef="let ticket">
+              <button 
+                mat-raised-button 
+                color="primary"
+                (click)="verDetalleTicket(ticket)"
+              >
+                <mat-icon>visibility</mat-icon>
+                Ver Detalle
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="ticket-row"></tr>
+        </table>
+      </div>
+
+      <!-- Empty state -->
+      <div *ngIf="ticketsFiltrados.length === 0 && !cargando" class="empty-state">
+        <mat-icon>inbox</mat-icon>
+        <h3>No se encontraron tickets</h3>
+        <p>Intenta ajustar los filtros o verifica que existan tickets finalizados</p>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

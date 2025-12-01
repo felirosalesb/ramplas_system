@@ -380,25 +380,31 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
 
   // Métodos auxiliares para determinar acciones disponibles
   puedeConfirmarLlegada(ticket: Ticket): boolean {
-    return ticket.estado_actual === 'Rampla en Tránsito';
+    // Solo para tickets de RETIRO (CD envía rampla vacía a planta para cargar producción)
+    return ticket.tipo_ticket === 'Retiro pallets producción' && 
+           ticket.estado_actual === 'Rampla en Tránsito';
   }
 
   puedeIniciarCarga(ticket: Ticket): boolean {
-    return ticket.estado_actual === 'Rampla en Planta';
+    // Solo para tickets de RETIRO
+    return ticket.tipo_ticket === 'Retiro pallets producción' && 
+           ticket.estado_actual === 'Rampla en Planta';
   }
 
   puedeFinalizarCarga(ticket: Ticket): boolean {
-    return ticket.estado_actual === 'Carga iniciada';
+    // Solo para tickets de RETIRO
+    return ticket.tipo_ticket === 'Retiro pallets producción' && 
+           ticket.estado_actual === 'Carga iniciada';
   }
 
   puedeEliminarTicket(ticket: Ticket): boolean {
-    // Solo se puede eliminar si está en Pendiente Asignación
-    return ticket.estado_actual === 'Pendiente Asignación';
+    // Solo se puede eliminar si está en Pendiente Aprobación Galpón o Pendiente Asignación
+    return ['Pendiente Aprobación Galpón', 'Pendiente Asignación'].includes(ticket.estado_actual);
   }
 
-  puedeEditarTicket(ticket: Ticket): boolean {
-    // Solo se puede editar si está en Pendiente Asignación
-    return ticket.estado_actual === 'Pendiente Asignación';
+  puedeEditarMuelle(ticket: Ticket): boolean {
+    // Solo se puede editar si está en Pendiente Aprobación Galpón o Pendiente Asignación
+    return ['Pendiente Aprobación Galpón', 'Pendiente Asignación'].includes(ticket.estado_actual);
   }
 
   abrirModalEdicion(ticket: Ticket): void {
@@ -494,6 +500,7 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
 
   getEstadoColor(estado: string): string {
     const colores: any = {
+      'Pendiente Aprobación Galpón': 'warn',
       'Pendiente Asignación': 'warn',
       'Rampla en Tránsito': 'accent',
       'Rampla en Planta': 'primary',
@@ -575,18 +582,22 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
   }
 
   // ===== MÉTODOS PARA DESCARGA DE TICKETS DEL GALPÓN =====
+  // Estos métodos se usan cuando la rampla viene desde galpón con pallets vacíos
 
   puedeConfirmarLlegadaDesdeGalpon(ticket: Ticket): boolean {
+    // La rampla está en tránsito desde galpón hacia esta planta
     return ticket.tipo_ticket === 'Solicitar Pallets vacíos' && 
-           ticket.estado_actual === 'Rampla Cargada - Tránsito CD';
+           ticket.estado_actual === 'Rampla en Tránsito';
   }
 
   puedeIniciarDescarga(ticket: Ticket): boolean {
+    // La rampla llegó a planta y está lista para descargar
     return ticket.tipo_ticket === 'Solicitar Pallets vacíos' && 
            ticket.estado_actual === 'Rampla en Planta';
   }
 
   puedeFinalizarDescarga(ticket: Ticket): boolean {
+    // Descarga iniciada, ahora puede finalizar
     return ticket.tipo_ticket === 'Solicitar Pallets vacíos' && 
            ticket.estado_actual === 'Inicio Descarga';
   }
