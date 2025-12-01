@@ -322,7 +322,7 @@ export class SupabaseService {
             console.log('Actualizando estado del ticket...');
             const { data: ticketActualizado, error: updateTicketError } = await this.supabase
                 .from('tickets')
-                .update({ 
+                .update({
                     estado_actual: 'Cancelado por CD',
                     observaciones: motivoCancelacion
                 })
@@ -342,9 +342,9 @@ export class SupabaseService {
                 console.log('Liberando rampla:', ticket.rampla_asignada_id);
                 const { error: ramplaError } = await this.supabase
                     .from('ramplas')
-                    .update({ 
+                    .update({
                         estado: 'Libre',
-                        ticket_actual_id: null 
+                        ticket_actual_id: null
                     })
                     .eq('id', ticket.rampla_asignada_id);
 
@@ -361,9 +361,9 @@ export class SupabaseService {
                 console.log('Liberando muelle CD:', ticket.muelle_asignado_id);
                 const { error: muelleError } = await this.supabase
                     .from('muelles')
-                    .update({ 
+                    .update({
                         estado: 'Libre',
-                        ticket_actual_id: null 
+                        ticket_actual_id: null
                     })
                     .eq('id', ticket.muelle_asignado_id);
 
@@ -466,13 +466,13 @@ export class SupabaseService {
 
             if (ticket?.rampla_asignada_id) {
                 console.log('🔄 [cambiarEstadoTicket] Liberando rampla ID:', ticket.rampla_asignada_id);
-                
+
                 const { error: ramplaError, data: updateData } = await this.supabase
                     .from('ramplas')
                     .update({ estado: 'Libre', ticket_actual_id: null })
                     .eq('id', ticket.rampla_asignada_id)
                     .select();
-                
+
                 if (ramplaError) {
                     console.error('❌ [cambiarEstadoTicket] Error al liberar rampla:', ramplaError);
                     throw ramplaError;
@@ -594,7 +594,7 @@ export class SupabaseService {
         if (ticket?.rampla_asignada_id) {
             console.log('🔄 === LIBERANDO RAMPLA ===');
             console.log('🔄 Rampla ID:', ticket.rampla_asignada_id);
-            
+
             // Ver estado ANTES
             const { data: ramplaAntes } = await this.supabase
                 .from('ramplas')
@@ -621,7 +621,7 @@ export class SupabaseService {
                 console.error('❌ Detalle completo:', JSON.stringify(ramplaError, null, 2));
                 throw ramplaError;
             }
-            
+
             // Ver estado DESPUÉS
             const { data: ramplaDespues } = await this.supabase
                 .from('ramplas')
@@ -629,7 +629,7 @@ export class SupabaseService {
                 .eq('id', ticket.rampla_asignada_id)
                 .single();
             console.log('📊 Estado DESPUÉS:', ramplaDespues);
-            
+
             if (ramplaDespues?.estado === 'Libre') {
                 console.log('✅✅✅ RAMPLA LIBERADA EXITOSAMENTE');
             } else {
@@ -643,7 +643,7 @@ export class SupabaseService {
         if (ticket?.muelle_asignado_id) {
             console.log('🔄 === LIBERANDO MUELLE ===');
             console.log('🔄 Muelle ID:', ticket.muelle_asignado_id);
-            
+
             // Ver estado ANTES
             const { data: muelleAntes } = await this.supabase
                 .from('muelles')
@@ -669,7 +669,7 @@ export class SupabaseService {
                 console.error('❌ Mensaje:', muelleError.message);
                 throw muelleError;
             }
-            
+
             // Ver estado DESPUÉS
             const { data: muelleDespues } = await this.supabase
                 .from('muelles')
@@ -677,7 +677,7 @@ export class SupabaseService {
                 .eq('id', ticket.muelle_asignado_id)
                 .single();
             console.log('📊 Muelle DESPUÉS:', muelleDespues);
-            
+
             if (muelleDespues?.estado === 'Libre') {
                 console.log('✅✅✅ MUELLE LIBERADO EXITOSAMENTE');
             } else {
@@ -850,14 +850,14 @@ export class SupabaseService {
         if (ticket?.rampla_asignada_id) {
             console.log('🔄 === PROCESO DE LIBERACIÓN DE RAMPLA ===');
             console.log('🔄 Rampla ID a liberar:', ticket.rampla_asignada_id);
-            
+
             // Verificar estado actual de la rampla antes de liberar
             const { data: ramplaAntes, error: errorAntes } = await this.supabase
                 .from('ramplas')
                 .select('id, nombre, estado, ticket_actual_id')
                 .eq('id', ticket.rampla_asignada_id)
                 .single();
-            
+
             console.log('📊 Estado ANTES de liberar:', ramplaAntes);
             if (errorAntes) {
                 console.error('⚠️ Error al leer estado anterior:', errorAntes);
@@ -870,7 +870,7 @@ export class SupabaseService {
                 .select();
 
             console.log('📝 Resultado del UPDATE rampla:', resultUpdate);
-            
+
             if (ramplaError) {
                 console.error('❌❌❌ Error al liberar rampla:', ramplaError);
                 console.error('❌ Código de error:', ramplaError.code);
@@ -891,7 +891,7 @@ export class SupabaseService {
             if (errorDespues) {
                 console.error('⚠️ Error al leer estado posterior:', errorDespues);
             }
-            
+
             // Verificación explícita
             if (ramplaDespues?.estado === 'Libre') {
                 console.log('✅✅✅ RAMPLA LIBERADA EXITOSAMENTE');
@@ -1016,7 +1016,7 @@ export class SupabaseService {
 
     async getTicketsFinalizadosRango(fechaInicio: string, fechaFin: string): Promise<Ticket[]> {
         console.log('Consultando tickets finalizados en rango:', fechaInicio, 'a', fechaFin);
-        
+
         const { data, error } = await this.supabase
             .from('tickets')
             .select(`
@@ -1283,7 +1283,7 @@ export class SupabaseService {
 
     async getMuelles(): Promise<Muelle[]> {
         console.log('Obteniendo muelles con información de tickets y ramplas...');
-        
+
         const { data, error } = await this.supabase
             .from('muelles')
             .select(`
@@ -1323,7 +1323,7 @@ export class SupabaseService {
 
     async getMuellesLibres(): Promise<Muelle[]> {
         console.log('Obteniendo muelles libres...');
-        
+
         const { data, error } = await this.supabase
             .from('muelles')
             .select('*')
