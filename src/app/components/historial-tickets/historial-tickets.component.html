@@ -97,6 +97,46 @@
           {{ ticketsFiltrados.length }} tickets encontrados
         </mat-chip>
       </div>
+
+      <!-- Chips de filtros activos -->
+      <div class="filtros-activos" *ngIf="fechaInicio || fechaFin || plantaFiltro || tipoFiltro || busqueda">
+        <mat-chip-set aria-label="Filtros activos">
+          <mat-chip *ngIf="busqueda" [removable]="true" (removed)="clearBusqueda()">
+            Búsqueda: {{ busqueda }}
+            <button matChipRemove aria-label="Quitar búsqueda">
+              <mat-icon>close</mat-icon>
+            </button>
+          </mat-chip>
+
+          <mat-chip *ngIf="fechaInicio" [removable]="true" (removed)="clearFechaInicio()">
+            Desde: {{ fechaInicio | date:'dd/MM/yyyy' }}
+            <button matChipRemove aria-label="Quitar fecha inicio">
+              <mat-icon>close</mat-icon>
+            </button>
+          </mat-chip>
+
+          <mat-chip *ngIf="fechaFin" [removable]="true" (removed)="clearFechaFin()">
+            Hasta: {{ fechaFin | date:'dd/MM/yyyy' }}
+            <button matChipRemove aria-label="Quitar fecha fin">
+              <mat-icon>close</mat-icon>
+            </button>
+          </mat-chip>
+
+          <mat-chip *ngIf="plantaFiltro" [removable]="true" (removed)="clearPlanta()">
+            Planta: {{ plantaFiltro }}
+            <button matChipRemove aria-label="Quitar planta">
+              <mat-icon>close</mat-icon>
+            </button>
+          </mat-chip>
+
+          <mat-chip *ngIf="tipoFiltro" [removable]="true" (removed)="clearTipo()">
+            Tipo: {{ tipoFiltro }}
+            <button matChipRemove aria-label="Quitar tipo">
+              <mat-icon>close</mat-icon>
+            </button>
+          </mat-chip>
+        </mat-chip-set>
+      </div>
     </mat-card-content>
   </mat-card>
 
@@ -175,7 +215,15 @@
           </ng-container>
 
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="ticket-row"></tr>
+          <tr 
+            mat-row 
+            *matRowDef="let row; columns: displayedColumns;" 
+            class="ticket-row"
+            (click)="verDetalleTicket(row)"
+            tabindex="0"
+            (keyup.enter)="verDetalleTicket(row)"
+            aria-label="Ver detalle del ticket"
+          ></tr>
         </table>
       </div>
 

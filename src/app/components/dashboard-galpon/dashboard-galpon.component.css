@@ -158,4 +158,38 @@ mat-card-actions {
     flex-direction: column;
     align-items: flex-start;
   }
+
+  mat-card-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  mat-card-actions button {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-container {
+    padding: 12px;
+  }
+
+  .tickets-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ticket-info .info-item span {
+    font-size: 13px;
+  }
+
+  mat-card-actions {
+    flex-direction: column;
+  }
+
+  mat-card-actions button {
+    width: 100%;
+    flex: none;
+    min-width: unset;
+  }
 }

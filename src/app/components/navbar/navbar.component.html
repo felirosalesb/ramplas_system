@@ -5,6 +5,11 @@
       <span class="brand-text">Sistema Ramplas</span>
     </div>
 
+    <!-- Botón menú móvil -->
+    <button class="mobile-menu-button" mat-icon-button [matMenuTriggerFor]="mobileMenu" aria-label="Abrir menú">
+      <mat-icon>menu</mat-icon>
+    </button>
+
     <div class="navbar-actions">
       <!-- Link al Dashboard según rol -->
       <button mat-button [routerLink]="dashboardLink" routerLinkActive="active">
@@ -56,6 +61,12 @@
           <span>Rol: {{ userRole | uppercase }}</span>
         </button>
         <mat-divider></mat-divider>
+        <button mat-menu-item (click)="toggleCompactMode()">
+          <mat-icon>density_small</mat-icon>
+          <span>Modo compacto</span>
+          <mat-icon style="margin-left:auto;" *ngIf="compactMode">check</mat-icon>
+        </button>
+        <mat-divider></mat-divider>
         <button mat-menu-item (click)="cerrarSesion()">
           <mat-icon>exit_to_app</mat-icon>
           <span>Cerrar Sesión</span>
@@ -63,4 +74,73 @@
       </mat-menu>
     </div>
   </div>
+
+  <!-- Contenido del menú móvil -->
+  <mat-menu #mobileMenu="matMenu">
+    <button mat-menu-item [routerLink]="dashboardLink">
+      <mat-icon>home</mat-icon>
+      <span>{{ dashboardLabel }}</span>
+    </button>
+
+    <button mat-menu-item routerLink="/monitor-ramplas" *ngIf="mostrarMonitor">
+      <mat-icon>monitor</mat-icon>
+      <span>Monitor Ramplas</span>
+    </button>
+
+    <button mat-menu-item routerLink="/monitor-muelles" *ngIf="mostrarMonitor">
+      <mat-icon>warehouse</mat-icon>
+      <span>Monitor Muelles</span>
+    </button>
+
+    <button mat-menu-item routerLink="/reportes-cd" *ngIf="userRole === 'cd'">
+      <mat-icon>assessment</mat-icon>
+      <span>Reportes</span>
+    </button>
+
+    <button mat-menu-item routerLink="/historial">
+      <mat-icon>history</mat-icon>
+      <span>Historial</span>
+    </button>
+
+    <button mat-menu-item (click)="irANotificaciones()">
+      <mat-icon>notifications</mat-icon>
+      <span>Notificaciones</span>
+      <span class="menu-badge" *ngIf="notificacionesCount > 0">{{ notificacionesCount }}</span>
+    </button>
+
+    <mat-divider></mat-divider>
+
+    <button mat-menu-item disabled>
+      <mat-icon>badge</mat-icon>
+      <span>Rol: {{ userRole | uppercase }}</span>
+    </button>
+
+    <button mat-menu-item (click)="cerrarSesion()">
+      <mat-icon>exit_to_app</mat-icon>
+      <span>Cerrar Sesión</span>
+    </button>
+  </mat-menu>
 </mat-toolbar>
+
+<!-- Barra de navegación inferior móvil -->
+<div class="mobile-bottom-bar">
+  <div class="bar-content">
+    <button mat-icon-button [routerLink]="dashboardLink" aria-label="Inicio">
+      <mat-icon>home</mat-icon>
+    </button>
+
+    <button mat-icon-button routerLink="/historial" aria-label="Historial">
+      <mat-icon>history</mat-icon>
+    </button>
+
+    <button mat-icon-button (click)="irANotificaciones()" aria-label="Notificaciones">
+      <mat-icon [matBadge]="notificacionesCount" matBadgeColor="warn" [matBadgeHidden]="notificacionesCount === 0">notifications</mat-icon>
+    </button>
+
+    <button mat-icon-button [matMenuTriggerFor]="userMenu" aria-label="Usuario">
+      <mat-icon>account_circle</mat-icon>
+    </button>
+  </div>
+  <div class="safe-area-spacer"></div>
+  
+</div>

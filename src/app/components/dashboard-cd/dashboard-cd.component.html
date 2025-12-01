@@ -85,8 +85,14 @@
       </mat-card-content>
     </mat-card>
 
-    <!-- Tabs Principales -->
-    <mat-tab-group>
+    <!-- Tabs Principales (swipeable) -->
+    <mat-tab-group
+      [selectedIndex]="selectedTabIndex"
+      (selectedTabChange)="onTabChange($event.index)"
+      (touchstart)="onTouchStart($event)"
+      (touchmove)="onTouchMove($event)"
+      (touchend)="onTouchEnd()"
+    >
       
       <!-- Tab: Solicitudes Pendientes -->
       <mat-tab>
@@ -754,3 +760,14 @@
   font-weight: bold;
 }
 </style>
+
+<!-- FAB móvil de refresco de datos -->
+<button 
+  mat-fab 
+  color="primary" 
+  class="fab-refresh" 
+  (click)="cargarDatos()"
+  aria-label="Refrescar"
+>
+  <mat-icon>refresh</mat-icon>
+</button>

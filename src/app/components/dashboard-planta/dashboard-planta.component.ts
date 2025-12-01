@@ -572,7 +572,12 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
         width: '900px',
         maxWidth: '95vw',
         maxHeight: '90vh',
-        panelClass: 'detalle-ticket-dialog'
+        panelClass: 'detalle-ticket-dialog',
+        disableClose: false,
+        hasBackdrop: true,
+        autoFocus: false,
+        closeOnNavigation: true,
+        restoreFocus: false
       });
 
       console.log('Dialog abierto:', dialogRef);

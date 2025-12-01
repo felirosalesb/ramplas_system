@@ -31,6 +31,10 @@
     gap: 8px;
 }
 
+.mobile-menu-button {
+    display: none;
+}
+
 .button-text {
     margin: 0 8px;
 }
@@ -46,11 +50,37 @@
         display: none;
     }
 
-    .button-text {
-        display: none;
-    }
+    .navbar-actions { display: none; }
 
-    .navbar-container {
-        padding: 0 8px;
-    }
+    .mobile-menu-button { display: inline-flex; }
+
+    .navbar-container { padding: 0 8px; }
+}
+
+/* Barra inferior móvil */
+.mobile-bottom-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #ffffff;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+    display: none;
+    z-index: 90;
+}
+
+.mobile-bottom-bar .bar-content {
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 8px;
+}
+
+.mobile-bottom-bar .safe-area-spacer {
+    height: env(safe-area-inset-bottom, 0);
+}
+
+@media (max-width: 768px) {
+    .mobile-bottom-bar { display: block; }
 }

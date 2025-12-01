@@ -239,6 +239,18 @@
   </div>
 </div>
 
+<!-- FAB móvil para crear solicitud -->
+<button 
+  mat-fab 
+  color="primary" 
+  class="fab-add" 
+  (click)="toggleFormulario()"
+  aria-label="Nueva Solicitud"
+  *ngIf="!mostrarFormulario"
+>
+  <mat-icon>add</mat-icon>
+  </button>
+
 <!-- MODAL CONFIRMACIÓN DE LLEGADA -->
 <div class="modal-overlay" *ngIf="ticketSeleccionado" (click)="cerrarModalConfirmacion()">
   <mat-card class="modal-content" (click)="$event.stopPropagation()">

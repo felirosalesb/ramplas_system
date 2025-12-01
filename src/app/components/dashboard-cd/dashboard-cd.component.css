@@ -18,6 +18,20 @@
     margin-top: 20px;
 }
 
+/* Estadísticas */
+.stats-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.stat-card mat-card-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
 /* Tickets pendientes */
 .pending-section {
     margin-bottom: 32px;
@@ -438,6 +452,27 @@
     .tickets-list {
         gap: 12px;
     }
+
+    .stats-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .tickets-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .filters-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
 }
 
 /* Estilos para Lista de Tickets */
@@ -725,4 +760,29 @@
     .filters mat-form-field {
         width: 100%;
     }
+
+    .tab-content {
+        padding: 12px;
+    }
+
+    .ticket-list-actions {
+        flex-direction: column;
+    }
+
+    .ticket-list-actions button {
+        width: 100%;
+    }
+}
+
+/* FAB móvil */
+.fab-refresh {
+    position: fixed;
+    right: 16px;
+    bottom: 88px; /* por encima de la barra inferior */
+    z-index: 1001;
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .fab-refresh { display: inline-flex; }
 }
