@@ -42,7 +42,7 @@
       </button>
 
       <!-- Notificaciones -->
-      <button mat-icon-button (click)="irANotificaciones()">
+      <button mat-icon-button (click)="irANotificaciones()" [ngClass]="{ 'bell-pulse': bellPulse }">
         <mat-icon [matBadge]="notificacionesCount" matBadgeColor="warn" [matBadgeHidden]="notificacionesCount === 0">
           notifications
         </mat-icon>
@@ -65,6 +65,11 @@
           <mat-icon>density_small</mat-icon>
           <span>Modo compacto</span>
           <mat-icon style="margin-left:auto;" *ngIf="compactMode">check</mat-icon>
+        </button>
+        <button mat-menu-item (click)="toggleMuteNotifications()">
+          <mat-icon>{{ muted ? 'volume_off' : 'volume_up' }}</mat-icon>
+          <span>{{ muted ? 'Notificaciones silenciadas' : 'Silenciar notificaciones' }}</span>
+          <mat-icon class="ml-auto" *ngIf="muted">check</mat-icon>
         </button>
         <mat-divider></mat-divider>
         <button mat-menu-item (click)="cerrarSesion()">

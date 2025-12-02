@@ -33,9 +33,13 @@ export interface PopupNotification {
 export class NotificationService {
     private notificacionesSubject = new BehaviorSubject<PopupNotification[]>([]);
     public notificaciones$ = this.notificacionesSubject.asObservable();
-    
+    // Evento para nuevas notificaciones (para UI: animaciones, etc.)
+    private nuevoEventoSubject = new BehaviorSubject<PopupNotification | null>(null);
+    public nuevoEvento$ = this.nuevoEventoSubject.asObservable();
+
     private notificacionesHabilitadas = false;
     private rolUsuarioActual: RolUsuario | null = null;
+    private muted = false; // Silenciar sonidos y notificaciones nativas
 
     // Webhook de Microsoft Teams (configurar en environment)
     private teamsWebhookUrl = '';
@@ -48,6 +52,7 @@ export class NotificationService {
     ) {
         this.cargarNotificacionesGuardadas();
         this.solicitarPermisoNotificaciones();
+        this.muted = localStorage.getItem('notifMuted') === '1';
     }
 
     // ==================== CONFIGURACIÓN ====================
@@ -112,12 +117,15 @@ export class NotificationService {
         this.notificacionesSubject.next(notificaciones);
         this.guardarNotificaciones();
 
+        // Emitir evento para UI
+        this.nuevoEventoSubject.next(nueva);
+
         // Mostrar snackbar con duración según prioridad
         const duracion = this.getDuracionPorPrioridad(prioridad);
         this.mostrarSnackbar(mensaje, tipo, duracion, icono);
 
         // Mostrar notificación nativa del navegador
-        if (prioridad === 'alta' || prioridad === 'critica') {
+        if (!this.muted && (prioridad === 'alta' || prioridad === 'critica')) {
             this.mostrarNotificacionNativa(mensaje, tipo, ticketId, accion);
         }
 
@@ -172,6 +180,7 @@ export class NotificationService {
         ticketId: number,
         accion?: { texto: string; url: string }
     ): void {
+        if (this.muted) return;
         if (!this.notificacionesHabilitadas || Notification.permission !== 'granted') {
             return;
         }
@@ -184,7 +193,7 @@ export class NotificationService {
         };
 
         const titulo = `${iconos[tipo]} Sistema de Ramplas`;
-        
+
         const notification = new Notification(titulo, {
             body: mensaje,
             icon: '/favicon.ico',
@@ -243,6 +252,7 @@ export class NotificationService {
     }
 
     private reproducirSonido(prioridad: PrioridadNotificacion = 'media'): void {
+        if (this.muted) return;
         // Sonidos diferentes según prioridad
         const sonidos = {
             critica: 'assets/sounds/notification-critica.mp3',
@@ -253,10 +263,29 @@ export class NotificationService {
         try {
             const audio = new Audio(sonidos[prioridad]);
             audio.volume = prioridad === 'critica' ? 0.7 : prioridad === 'alta' ? 0.5 : 0.3;
-            void audio.play();
+            audio.play().catch(() => this.tocarBeepFallback(prioridad));
         } catch {
-            // Silenciar errores por bloqueo del navegador o falta de archivo
+            // Fallback simple con WebAudio si no hay archivos o está bloqueado
+            this.tocarBeepFallback(prioridad);
         }
+    }
+
+    private tocarBeepFallback(prioridad: PrioridadNotificacion) {
+        try {
+            const ctx = new (window as any).AudioContext();
+            const o = ctx.createOscillator();
+            const g = ctx.createGain();
+            o.type = 'sine';
+            o.frequency.value = prioridad === 'critica' ? 880 : prioridad === 'alta' ? 660 : 520;
+            g.gain.value = prioridad === 'critica' ? 0.08 : prioridad === 'alta' ? 0.06 : 0.05;
+            o.connect(g);
+            g.connect(ctx.destination);
+            o.start();
+            setTimeout(() => {
+                o.stop();
+                ctx.close();
+            }, prioridad === 'critica' ? 300 : 180);
+        } catch { }
     }
 
     private vibrarSiMovil(prioridad: PrioridadNotificacion = 'media'): void {
@@ -270,7 +299,7 @@ export class NotificationService {
                     navigator.vibrate(40);
                 }
             }
-        } catch {}
+        } catch { }
     }
 
     // ==================== MICROSOFT TEAMS ====================
@@ -454,5 +483,15 @@ export class NotificationService {
 
         this.notificacionesSubject.next(filtradas);
         this.guardarNotificaciones();
+    }
+
+    // ==================== CONFIGURACIÓN UI (Silencio) ====================
+    setMuted(value: boolean): void {
+        this.muted = value;
+        localStorage.setItem('notifMuted', this.muted ? '1' : '0');
+    }
+
+    isMuted(): boolean {
+        return this.muted;
     }
 }

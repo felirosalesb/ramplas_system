@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { NotificationService } from './notification.service';
 import {
     Ticket,
     Rampla,
@@ -22,7 +23,7 @@ export class SupabaseService {
     private currentUserSubject = new BehaviorSubject<User | null>(null);
     public currentUser$ = this.currentUserSubject.asObservable();
 
-    constructor() {
+    constructor(private notificationService: NotificationService) {
         console.log('Inicializando Supabase con:', {
             url: environment.supabaseUrl,
             keyLength: environment.supabaseKey?.length
@@ -104,7 +105,7 @@ export class SupabaseService {
         console.log('Datos del usuario:', userData);
 
         // Determinar el estado inicial según el tipo de ticket
-        const estadoInicial = dto.tipo_ticket === 'Solicitar Pallets vacíos' 
+        const estadoInicial = dto.tipo_ticket === 'Solicitar Pallets vacíos'
             ? 'Pendiente Aprobación Galpón'  // Va primero a Galpón para aprobación
             : 'Pendiente Asignación';        // Retiro de producción va directo a CD
 
@@ -115,7 +116,7 @@ export class SupabaseService {
             muelle_planta: dto.muelle_planta,
             nombre_planta: userData?.nombre_planta || null,
             estado_actual: estadoInicial,
-            fecha_alerta_cd: dto.tipo_ticket === 'Solicitar Pallets vacíos' 
+            fecha_alerta_cd: dto.tipo_ticket === 'Solicitar Pallets vacíos'
                 ? null  // No alertar a CD aún, primero debe aprobar Galpón
                 : new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
         };
@@ -159,7 +160,7 @@ export class SupabaseService {
 
         const { data: rampla } = await this.supabase
             .from('ramplas')
-            .select('estado')
+            .select('estado, nombre')
             .eq('id', dto.rampla_id)
             .single();
 
@@ -201,6 +202,23 @@ export class SupabaseService {
 
         await this.registrarTiempo(dto.ticket_id, 'Rampla en Tránsito', user.id);
         console.log('Asignación completada exitosamente');
+
+        // Notificación a planta sobre rampla asignada
+        try {
+            if (rampla?.nombre) {
+                this.notificationService.notificarRamplaAsignada(dto.ticket_id, rampla.nombre);
+            } else {
+                this.notificationService.agregarNotificacion(
+                    `Rampla asignada al Ticket #${dto.ticket_id}`,
+                    dto.ticket_id,
+                    'success',
+                    'media',
+                    ['planta', 'admin']
+                );
+            }
+        } catch (e) {
+            console.error('Error enviando notificación de rampla asignada:', e);
+        }
     }
 
     async confirmarLlegadaRampla(dto: ConfirmarLlegadaDTO): Promise<void> {
@@ -381,6 +399,18 @@ export class SupabaseService {
             }
 
             console.log('✅ Ticket cancelado exitosamente');
+            // Notificación de cancelación para CD y Planta
+            try {
+                this.notificationService.agregarNotificacion(
+                    `Ticket #${ticketId} cancelado: ${motivoCancelacion}`,
+                    ticketId,
+                    'error',
+                    'alta',
+                    ['planta', 'cd', 'admin']
+                );
+            } catch (e) {
+                console.error('Error enviando notificación de cancelación:', e);
+            }
         } catch (error: any) {
             console.error('❌ Error en cancelarTicket:', error);
             throw error;
@@ -489,6 +519,28 @@ export class SupabaseService {
                 console.log('ℹ️ [cambiarEstadoTicket] No hay rampla asignada para liberar');
             }
         }
+        // Notificación genérica de cambio de estado (excepto estados internos ya manejados)
+        try {
+            if (nuevoEstado === 'Inicio Descarga') {
+                this.notificationService.agregarNotificacion(
+                    `Inicio de descarga - Ticket #${ticketId}`,
+                    ticketId,
+                    'info',
+                    'media',
+                    ['cd', 'admin']
+                );
+            } else if (nuevoEstado === 'Fin Descarga' || nuevoEstado === 'Libre') {
+                this.notificationService.agregarNotificacion(
+                    `Descarga finalizada - Ticket #${ticketId}`,
+                    ticketId,
+                    'success',
+                    'media',
+                    ['cd', 'admin']
+                );
+            }
+        } catch (e) {
+            console.error('Error enviando notificación de cambio de estado:', e);
+        }
     }
 
     async asignarMuelleCD(ticketId: number, muelle: number): Promise<void> {
@@ -525,6 +577,19 @@ export class SupabaseService {
         await this.registrarTiempo(ticketId, 'Asignada a Muelle CD', user.id);
         console.log('✅ Muelle asignado correctamente. Esperando inicio de descarga.');
         console.log('=== SERVICE: Proceso completado ===');
+
+        // Notificación de muelle asignado
+        try {
+            this.notificationService.agregarNotificacion(
+                `Muelle CD asignado al Ticket #${ticketId}`,
+                ticketId,
+                'info',
+                'media',
+                ['cd', 'admin']
+            );
+        } catch (e) {
+            console.error('Error enviando notificación de muelle asignado:', e);
+        }
     }
 
     async iniciarDescarga(ticketId: number): Promise<void> {
@@ -547,6 +612,19 @@ export class SupabaseService {
 
         await this.registrarTiempo(ticketId, 'Inicio Descarga', user.id);
         console.log('Descarga iniciada correctamente');
+
+        // Notificación de inicio descarga
+        try {
+            this.notificationService.agregarNotificacion(
+                `Inicio de descarga - Ticket #${ticketId}`,
+                ticketId,
+                'info',
+                'media',
+                ['cd', 'admin']
+            );
+        } catch (e) {
+            console.error('Error enviando notificación de inicio descarga:', e);
+        }
     }
 
     async finalizarDescarga(ticketId: number): Promise<void> {
@@ -698,6 +776,19 @@ export class SupabaseService {
         await this.registrarTiempo(ticketId, 'Libre', user.id);
         console.log('✅ Descarga finalizada, ticket liberado, rampla y muelle liberados');
         console.log('=== FIN FINALIZAR DESCARGA ===');
+
+        // Notificación de fin descarga
+        try {
+            this.notificationService.agregarNotificacion(
+                `Descarga finalizada - Ticket #${ticketId}`,
+                ticketId,
+                'success',
+                'media',
+                ['cd', 'admin']
+            );
+        } catch (e) {
+            console.error('Error enviando notificación de fin descarga:', e);
+        }
     }
 
     async finalizarCarga(ticketId: number, cantidadPallets: number): Promise<void> {
@@ -751,6 +842,29 @@ export class SupabaseService {
         }
 
         console.log('Carga finalizada, ticket en tránsito a bodega, CD notificado');
+
+        // Notificación de fin de carga (si se puede obtener nombre de rampla)
+        try {
+            const { data: ticketRelacionado } = await this.supabase
+                .from('tickets')
+                .select('rampla_asignada:ramplas!rampla_asignada_id(nombre)')
+                .eq('id', ticketId)
+                .single();
+            const ramplaNombre = (ticketRelacionado as any)?.rampla_asignada?.nombre;
+            if (ramplaNombre) {
+                this.notificationService.notificarFinCarga(ticketId, ramplaNombre);
+            } else {
+                this.notificationService.agregarNotificacion(
+                    `Carga finalizada - Ticket #${ticketId}`,
+                    ticketId,
+                    'success',
+                    'media',
+                    ['planta', 'cd', 'admin']
+                );
+            }
+        } catch (e) {
+            console.error('Error enviando notificación de fin de carga:', e);
+        }
     }
 
     /**

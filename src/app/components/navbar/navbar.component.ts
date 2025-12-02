@@ -31,6 +31,8 @@ export class NavbarComponent implements OnInit {
   userEmail: string = '';
   userRole: string = '';
   compactMode = false;
+  bellPulse = false;
+  muted = false;
 
   constructor(
     private supabaseService: SupabaseService,
@@ -52,10 +54,20 @@ export class NavbarComponent implements OnInit {
       this.notificacionesCount = notificaciones.filter(n => !n.leido).length;
     });
 
+    // Pulso en campana cuando llega notificación nueva
+    this.notificationService.nuevoEvento$.subscribe(evt => {
+      if (evt) {
+        this.pulseBellTemp();
+      }
+    });
+
     // Cargar preferencia de densidad compacta
     const saved = localStorage.getItem('compactDensity');
     this.compactMode = saved === '1';
     this.applyCompactDensity();
+
+    // Cargar preferencia de silencio de notificaciones
+    this.muted = this.notificationService.isMuted();
   }
 
   // Mostrar Monitor solo para CD y Admin
@@ -105,6 +117,11 @@ export class NavbarComponent implements OnInit {
     this.applyCompactDensity();
   }
 
+  toggleMuteNotifications() {
+    this.muted = !this.muted;
+    this.notificationService.setMuted(this.muted);
+  }
+
   private applyCompactDensity() {
     const body = document.body;
     if (this.compactMode) {
@@ -112,5 +129,10 @@ export class NavbarComponent implements OnInit {
     } else {
       body.classList.remove('compact-density');
     }
+  }
+
+  private pulseBellTemp() {
+    this.bellPulse = true;
+    setTimeout(() => (this.bellPulse = false), 2500);
   }
 }
