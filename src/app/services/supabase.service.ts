@@ -168,13 +168,24 @@ export class SupabaseService {
             throw new Error('La rampla no está disponible');
         }
 
-        console.log('Actualizando ticket ID:', dto.ticket_id);
+        // Determinar estado de tránsito según tipo de ticket
+        const { data: ticketData } = await this.supabase
+            .from('tickets')
+            .select('tipo_ticket')
+            .eq('id', dto.ticket_id)
+            .single();
+        
+        const estadoTransito = ticketData?.tipo_ticket === 'Solicitar Pallets vacíos'
+            ? 'Rampla en Tránsito a Galpón'  // Va primero al galpón
+            : 'Rampla en Tránsito a Planta';  // Retiro va directo a planta
+
+        console.log('Actualizando ticket ID:', dto.ticket_id, 'a estado:', estadoTransito);
         const { error: ticketError } = await this.supabase
             .from('tickets')
             .update({
                 rampla_asignada_id: dto.rampla_id,
                 cd_user_id: dto.cd_user_id,
-                estado_actual: 'Rampla en Tránsito',
+                estado_actual: estadoTransito,
                 fecha_alerta_cd: null
             })
             .eq('id', dto.ticket_id);
@@ -200,8 +211,8 @@ export class SupabaseService {
         }
         console.log('Rampla actualizada correctamente');
 
-        await this.registrarTiempo(dto.ticket_id, 'Rampla en Tránsito', user.id);
-        console.log('Asignación completada exitosamente');
+        await this.registrarTiempo(dto.ticket_id, estadoTransito, user.id);
+        console.log('Asignación completada exitosamente con estado:', estadoTransito);
 
         // Notificación a planta sobre rampla asignada
         try {
