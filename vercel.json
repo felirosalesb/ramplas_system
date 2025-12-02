@@ -5,19 +5,16 @@
             "src": "package.json",
             "use": "@vercel/static-build",
             "config": {
-                "distDir": "dist/ramplas-system"
+                "distDir": "dist/ramplas-system/browser"
             }
         }
     ],
     "buildCommand": "npm run build",
-    "outputDirectory": "dist/ramplas-system",
-    "routes": [
+    "outputDirectory": "dist/ramplas-system/browser",
+    "rewrites": [
         {
-            "handle": "filesystem"
-        },
-        {
-            "src": "/.*",
-            "dest": "/index.html"
+            "source": "/(.*)",
+            "destination": "/index.html"
         }
     ]
 }
