@@ -110,7 +110,7 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
   async ngOnInit(): Promise<void> {
     // Configurar rol de usuario para filtrado de notificaciones
     this.notificationService.setRolUsuario('cd');
-    
+
     await this.cargarDatos();
     this.iniciarRealtimeSubscriptions();
     this.iniciarMonitoreoAlertas();
@@ -205,7 +205,7 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
 
       // Pestaña 2: Ramplas en Planta (desde "Rampla en Tránsito" hasta "Fin de Carga")
       this.ticketsEnPlanta = todosTickets
-        .filter(t => ['Rampla en Tránsito', 'Rampla en Planta', 'Carga iniciada', 'Fin de Carga'].includes(t.estado_actual))
+        .filter(t => ['Rampla en Tránsito a Galpón', 'Rampla en Tránsito a Planta', 'Rampla en Tránsito', 'Rampla en Planta', 'Carga iniciada', 'Fin de Carga'].includes(t.estado_actual))
         .sort((a, b) => new Date(a.fecha_creacion).getTime() - new Date(b.fecha_creacion).getTime());
 
       // Pestaña 3: En Tránsito (desde "Rampla cargada" hasta "Inicio Descarga")
@@ -320,13 +320,14 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
 
       // Alerta 1: Ramplas asignadas hace más de 15 minutos
       for (const ticket of this.ticketsEnPlanta) {
-        if (ticket.estado_actual !== 'Rampla en Tránsito') continue;
+        const estadosTransito = ['Rampla en Tránsito a Galpón', 'Rampla en Tránsito a Planta', 'Rampla en Tránsito'];
+        if (!estadosTransito.includes(ticket.estado_actual)) continue;
 
         const { data: tiempos } = await this.supabaseService['supabase']
           .from('registros_tiempo')
           .select('fecha_hora')
           .eq('ticket_id', ticket.id)
-          .eq('estado', 'Rampla en Tránsito')
+          .in('estado', estadosTransito)
           .order('fecha_hora', { ascending: false })
           .limit(1);
 
@@ -527,7 +528,9 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
   getEstadoColor(estado: string): string {
     const colores: any = {
       'Pendiente Asignación': 'warn',
-      'Rampla en Tránsito': 'primary',
+      'Rampla en Tránsito a Galpón': 'primary',
+      'Rampla en Tránsito a Planta': 'primary',
+      'Rampla en Tránsito': 'primary',  // Compatibilidad
       'Rampla en Planta': 'primary',
       'Carga iniciada': 'primary',
       'Fin de Carga': 'primary',
@@ -638,7 +641,7 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
   }
 
   puedeCancelarTicket(ticket: Ticket): boolean {
-    return ticket.estado_actual === 'Rampla en Tránsito';
+    return ['Rampla en Tránsito a Galpón', 'Rampla en Tránsito a Planta', 'Rampla en Tránsito'].includes(ticket.estado_actual);
   }
 
   abrirModalCancelar(ticket: Ticket): void {
@@ -666,7 +669,7 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const motivo = this.motivoCancelacionSeleccionado === 'Otro' 
+    const motivo = this.motivoCancelacionSeleccionado === 'Otro'
       ? this.otraRazonCancelacion.trim()
       : this.motivoCancelacionSeleccionado;
 
@@ -716,7 +719,9 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
   calcularContadoresEstadoRamplas(): void {
     // Inicializar solo los estados donde la rampla está activa (sin Solicitud Creada y Pendiente Asignación)
     this.contadoresEstadoRamplas = {
-      'Rampla en Tránsito': 0,
+      'Rampla en Tránsito a Galpón': 0,
+      'Rampla en Tránsito a Planta': 0,
+      'Rampla en Tránsito': 0,  // Compatibilidad
       'Rampla en Planta': 0,
       'Carga iniciada': 0,
       'Fin de Carga': 0,
@@ -740,7 +745,9 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
   getEstadosRamplasConContadores(): Array<{ estado: string; cantidad: number }> {
     // Devolver estados donde la rampla está en uso (sin Solicitud Creada y Pendiente Asignación)
     const ordenEstados = [
-      'Rampla en Tránsito',
+      'Rampla en Tránsito a Galpón',
+      'Rampla en Tránsito a Planta',
+      'Rampla en Tránsito',  // Compatibilidad
       'Rampla en Planta',
       'Carga iniciada',
       'Fin de Carga',
@@ -762,7 +769,9 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
     const iconos: { [key: string]: string } = {
       'Solicitud Creada': 'add_circle',
       'Pendiente Asignación': 'pending',
-      'Rampla en Tránsito': 'local_shipping',
+      'Rampla en Tránsito a Galpón': 'local_shipping',
+      'Rampla en Tránsito a Planta': 'local_shipping',
+      'Rampla en Tránsito': 'local_shipping',  // Compatibilidad
       'Rampla en Planta': 'factory',
       'Carga iniciada': 'play_circle',
       'Fin de Carga': 'check_circle',
@@ -779,6 +788,7 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
   getEstadoRamplaClass(estado: string): string {
     if (estado.includes('Rechazada')) return 'error';
     if (estado.includes('Pendiente') || estado.includes('Espera')) return 'warning';
+    if (estado.includes('Tránsito')) return 'info';  // Incluye nuevos estados de tránsito
     if (estado.includes('Libre') || estado.includes('Fin')) return 'success';
     if (estado.includes('Inicio') || estado.includes('Cargado')) return 'info';
     return 'primary';

@@ -42,8 +42,10 @@ export type EstadoTicket =
     | 'Pendiente Aprobación Galpón'  // Nuevo: Para solicitudes de pallets vacíos esperando aprobación de Galpón
     | 'Pendiente Asignación'
     | 'Rampla Asignada'
-    // Estados compartidos (retiro y envío)
-    | 'Rampla en Tránsito'
+    // Estados de tránsito específicos por destino
+    | 'Rampla en Tránsito a Galpón'  // CD → Galpón (flujo Solicitar Pallets vacíos)
+    | 'Rampla en Tránsito a Planta'  // Galpón → Planta o CD → Planta (flujo Solicitar/Retiro)
+    | 'Rampla en Tránsito'  // DEPRECATED: Mantener por compatibilidad
     // Estados específicos de RETIRO 
     | 'Rampla en Planta'
     | 'Carga iniciada'

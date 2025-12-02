@@ -51,7 +51,7 @@ export class DashboardGalponComponent implements OnInit, OnDestroy {
   async ngOnInit(): Promise<void> {
     // Configurar rol de usuario para filtrado de notificaciones
     this.notificationService.setRolUsuario('galpon');
-    
+
     await this.cargarTickets();
     this.iniciarRealtimeSubscriptions();
   }
@@ -67,15 +67,15 @@ export class DashboardGalponComponent implements OnInit, OnDestroy {
     this.cargando = true;
     try {
       const todosTickets = await this.supabaseService.getTicketsActivos();
-      
+
       // Filtrar solo tickets de tipo 'Solicitar Pallets vacíos'
       const ticketsEnvio = todosTickets.filter(t => t.tipo_ticket === 'Solicitar Pallets vacíos');
-      
+
       // PASO 1: Solicitudes de planta esperando aprobación de galpón
-      this.ticketsSolicitudes = ticketsEnvio.filter(t => 
+      this.ticketsSolicitudes = ticketsEnvio.filter(t =>
         t.estado_actual === 'Pendiente Aprobación Galpón'
       );
-      
+
       // PASO 2: Ramplas que CD ya asignó y están en tránsito hacia galpón
       // O que ya llegaron al galpón esperando confirmación
       // IMPORTANTE: Solo mostrar si están llegando POR PRIMERA VEZ al galpón
@@ -83,7 +83,7 @@ export class DashboardGalponComponent implements OnInit, OnDestroy {
       this.ticketsPendientes = await this.filtrarTicketsPendientesGalpon(ticketsEnvio);
 
       // PASO 3: Tickets en proceso de carga en galpón con pallets vacíos
-      this.ticketsEnvio = ticketsEnvio.filter(t => 
+      this.ticketsEnvio = ticketsEnvio.filter(t =>
         t.estado_actual === 'Carga Iniciada Galpón'
       );
 
@@ -105,7 +105,7 @@ export class DashboardGalponComponent implements OnInit, OnDestroy {
   iniciarRealtimeSubscriptions(): void {
     this.realtimeChannel = this.supabaseService.subscribeToTickets(async (payload) => {
       console.log('Cambio en tickets:', payload);
-      
+
       // Recargar si el ticket es de tipo Solicitar Pallets vacíos
       if (payload.new?.tipo_ticket === 'Solicitar Pallets vacíos' || payload.old?.tipo_ticket === 'Solicitar Pallets vacíos') {
         await this.cargarTickets();
@@ -224,7 +224,9 @@ export class DashboardGalponComponent implements OnInit, OnDestroy {
   getEstadoColor(estado: string): string {
     const colores: any = {
       'Rampla Asignada': 'accent',
-      'Rampla en Tránsito': 'accent',
+      'Rampla en Tránsito a Galpón': 'accent',
+      'Rampla en Tránsito a Planta': 'accent',
+      'Rampla en Tránsito': 'accent',  // Compatibilidad
       'Rampla en Galpón': 'primary',
       'Carga Iniciada Galpón': 'primary',
       'Rampla Cargada - Tránsito CD': 'warn'
@@ -234,7 +236,7 @@ export class DashboardGalponComponent implements OnInit, OnDestroy {
 
   puedeConfirmarLlegada(ticket: Ticket): boolean {
     // Solo puede confirmar llegada si la rampla está en tránsito hacia galpón
-    return ticket.estado_actual === 'Rampla en Tránsito';
+    return ticket.estado_actual === 'Rampla en Tránsito a Galpón';
   }
 
   puedeIniciarCarga(ticket: Ticket): boolean {
@@ -247,37 +249,12 @@ export class DashboardGalponComponent implements OnInit, OnDestroy {
 
   /**
    * Filtra tickets que están llegando al galpón POR PRIMERA VEZ
-   * (excluye los que ya fueron cargados y van hacia planta)
+   * Con los nuevos estados específicos, solo mostramos 'Rampla en Tránsito a Galpón' y 'Rampla en Galpón'
    */
   private async filtrarTicketsPendientesGalpon(ticketsEnvio: Ticket[]): Promise<Ticket[]> {
-    const candidatos = ticketsEnvio.filter(t => 
-      ['Rampla en Tránsito', 'Rampla en Galpón'].includes(t.estado_actual)
+    // Con estados específicos, es simple: solo mostrar los que van hacia galpón
+    return ticketsEnvio.filter(t =>
+      ['Rampla en Tránsito a Galpón', 'Rampla en Galpón'].includes(t.estado_actual)
     );
-
-    // Para cada candidato, verificar si ya pasó por 'Carga Iniciada Galpón'
-    const resultados = await Promise.all(
-      candidatos.map(async (ticket) => {
-        try {
-          const registros = await this.supabaseService['supabase']
-            .from('registros_tiempo')
-            .select('estado_registrado')
-            .eq('ticket_id', ticket.id)
-            .eq('estado_registrado', 'Carga Iniciada Galpón');
-
-          // Si ya tiene registro de carga iniciada, significa que va hacia planta
-          // (no debe mostrarse aquí)
-          if (registros.data && registros.data.length > 0) {
-            return null; // Excluir este ticket
-          }
-          return ticket; // Incluir este ticket
-        } catch (error) {
-          console.error('Error al verificar historial:', error);
-          return ticket; // En caso de error, incluir por seguridad
-        }
-      })
-    );
-
-    // Filtrar nulls y retornar
-    return resultados.filter((t): t is Ticket => t !== null);
   }
 }

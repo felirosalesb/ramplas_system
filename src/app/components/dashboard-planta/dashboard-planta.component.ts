@@ -84,7 +84,7 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
   async ngOnInit(): Promise<void> {
     // Configurar rol de usuario para filtrado de notificaciones
     this.notificationService.setRolUsuario('planta');
-    
+
     await this.cargarMisTickets();
     this.iniciarRealtimeSubscriptions();
 
@@ -160,8 +160,8 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
 
         // Notificar si una rampla fue asignada a mi ticket
         if (payload.eventType === 'UPDATE' &&
-          payload.new.estado_actual === 'Rampla en Tránsito' &&
-          payload.old.estado_actual !== 'Rampla en Tránsito') {
+          payload.new.estado_actual === 'Rampla en Tránsito a Planta' &&
+          payload.old.estado_actual !== 'Rampla en Tránsito a Planta') {
           this.notificationService.agregarNotificacion(
             `Rampla asignada a tu solicitud #${payload.new.id}`,
             payload.new.id,
@@ -353,7 +353,7 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
       console.log('Finalizando carga con', this.cantidadPallets, 'pallets...');
       await this.supabaseService.finalizarCarga(this.ticketFinalizarCarga.id, this.cantidadPallets);
       console.log('Carga finalizada exitosamente');
-      
+
       this.notificationService.agregarNotificacion(
         `Carga finalizada con ${this.cantidadPallets} pallets. Rampla en tránsito a bodega`,
         this.ticketFinalizarCarga.id,
@@ -381,20 +381,20 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
   // Métodos auxiliares para determinar acciones disponibles
   puedeConfirmarLlegada(ticket: Ticket): boolean {
     // Solo para tickets de RETIRO (CD envía rampla vacía a planta para cargar producción)
-    return ticket.tipo_ticket === 'Retiro pallets producción' && 
-           ticket.estado_actual === 'Rampla en Tránsito';
+    return ticket.tipo_ticket === 'Retiro pallets producción' &&
+      ticket.estado_actual === 'Rampla en Tránsito a Planta';
   }
 
   puedeIniciarCarga(ticket: Ticket): boolean {
     // Solo para tickets de RETIRO
-    return ticket.tipo_ticket === 'Retiro pallets producción' && 
-           ticket.estado_actual === 'Rampla en Planta';
+    return ticket.tipo_ticket === 'Retiro pallets producción' &&
+      ticket.estado_actual === 'Rampla en Planta';
   }
 
   puedeFinalizarCarga(ticket: Ticket): boolean {
     // Solo para tickets de RETIRO
-    return ticket.tipo_ticket === 'Retiro pallets producción' && 
-           ticket.estado_actual === 'Carga iniciada';
+    return ticket.tipo_ticket === 'Retiro pallets producción' &&
+      ticket.estado_actual === 'Carga iniciada';
   }
 
   puedeEliminarTicket(ticket: Ticket): boolean {
@@ -502,7 +502,9 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
     const colores: any = {
       'Pendiente Aprobación Galpón': 'warn',
       'Pendiente Asignación': 'warn',
-      'Rampla en Tránsito': 'accent',
+      'Rampla en Tránsito a Galpón': 'accent',
+      'Rampla en Tránsito a Planta': 'accent',
+      'Rampla en Tránsito': 'accent',  // Compatibilidad
       'Rampla en Planta': 'primary',
       'Carga iniciada': 'primary',
       'Fin de Carga': 'primary',
@@ -591,20 +593,20 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
 
   puedeConfirmarLlegadaDesdeGalpon(ticket: Ticket): boolean {
     // La rampla está en tránsito desde galpón hacia esta planta
-    return ticket.tipo_ticket === 'Solicitar Pallets vacíos' && 
-           ticket.estado_actual === 'Rampla en Tránsito';
+    return ticket.tipo_ticket === 'Solicitar Pallets vacíos' &&
+      ticket.estado_actual === 'Rampla en Tránsito a Planta';
   }
 
   puedeIniciarDescarga(ticket: Ticket): boolean {
     // La rampla llegó a planta y está lista para descargar
-    return ticket.tipo_ticket === 'Solicitar Pallets vacíos' && 
-           ticket.estado_actual === 'Rampla en Planta';
+    return ticket.tipo_ticket === 'Solicitar Pallets vacíos' &&
+      ticket.estado_actual === 'Rampla en Planta';
   }
 
   puedeFinalizarDescarga(ticket: Ticket): boolean {
     // Descarga iniciada, ahora puede finalizar
-    return ticket.tipo_ticket === 'Solicitar Pallets vacíos' && 
-           ticket.estado_actual === 'Inicio Descarga';
+    return ticket.tipo_ticket === 'Solicitar Pallets vacíos' &&
+      ticket.estado_actual === 'Inicio Descarga';
   }
 
   async confirmarLlegadaDesdeGalpon(ticket: Ticket): Promise<void> {
@@ -656,7 +658,7 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
     try {
       // Usar método específico que maneja todo el proceso
       await this.supabaseService.finalizarDescargaYLiberarRampla(ticket.id);
-      
+
       this.notificationService.agregarNotificacion(
         `Descarga finalizada y rampla liberada - Ticket #${ticket.id}`,
         ticket.id,

@@ -905,12 +905,11 @@ export class SupabaseService {
         // Registrar "Fin de Carga" en galpón
         await this.registrarTiempo(ticketId, 'Fin de Carga', user.id);
 
-        // Cambiar a "Rampla en Tránsito" para que vaya a la PLANTA solicitante
-        // (reutilizamos este estado para el viaje Galpón → Planta)
+        // Cambiar a "Rampla en Tránsito a Planta" para que vaya a la PLANTA solicitante
         const { error } = await this.supabase
             .from('tickets')
             .update({
-                estado_actual: 'Rampla en Tránsito'
+                estado_actual: 'Rampla en Tránsito a Planta'
             })
             .eq('id', ticketId);
 
@@ -919,7 +918,7 @@ export class SupabaseService {
             throw error;
         }
 
-        await this.registrarTiempo(ticketId, 'Rampla en Tránsito', user.id);
+        await this.registrarTiempo(ticketId, 'Rampla en Tránsito a Planta', user.id);
 
         // Notificar a planta (quien solicitó los pallets) que la rampla va en camino
         const { data: ticket } = await this.supabase
