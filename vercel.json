@@ -4,13 +4,20 @@
         {
             "src": "package.json",
             "use": "@vercel/static-build",
-            "config": { "distDir": "dist/ramplas-system" }
+            "config": {
+                "distDir": "dist/ramplas-system"
+            }
         }
     ],
     "buildCommand": "npm run build",
     "outputDirectory": "dist/ramplas-system",
     "routes": [
-        { "handle": "filesystem" },
-        { "src": "/.*", "dest": "/index.html" }
+        {
+            "handle": "filesystem"
+        },
+        {
+            "src": "/.*",
+            "dest": "/index.html"
+        }
     ]
 }
