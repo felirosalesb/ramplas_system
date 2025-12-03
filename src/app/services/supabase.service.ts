@@ -350,8 +350,10 @@ export class SupabaseService {
             if (!ticket) {
                 throw new Error('Ticket no encontrado');
             }
-            if (ticket.estado_actual !== 'Rampla en Tránsito') {
-                throw new Error(`Solo se pueden cancelar tickets en estado "Rampla en Tránsito". Estado actual: ${ticket.estado_actual}`);
+            // Permitir cancelación en cualquiera de los estados de tránsito específicos
+            const estadosCancelables = ['Rampla en Tránsito a Planta', 'Rampla en Tránsito a Galpón', 'Rampla en Tránsito']; // compatibilidad
+            if (!estadosCancelables.includes(ticket.estado_actual)) {
+                throw new Error(`Solo se pueden cancelar tickets en estados de tránsito. Estado actual: ${ticket.estado_actual}`);
             }
 
             // Cambiar estado del ticket a "Cancelado por CD"
