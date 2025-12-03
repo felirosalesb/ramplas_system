@@ -37,6 +37,9 @@ export class DetalleTicketComponent implements OnInit {
   cargando = true;
   esModal = false;
   displayedColumns: string[] = ['estado', 'fecha', 'tiempo'];
+  get huboRechazo(): boolean {
+    return this.registros.some(r => r.estado_registrado === 'Rechazada');
+  }
 
   // Swipe-to-close en móvil
   private touchStartY: number | null = null;

@@ -258,6 +258,9 @@ export class SupabaseService {
             updates.rampla_asignada_id = null;
             updates.estado_actual = 'Pendiente Asignación';
             updates.fecha_alerta_cd = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+            if (dto.observacion) {
+                updates.observaciones = dto.observacion;
+            }
         } else {
             // Confirmar llegada pasa a "Rampla en Planta" (estado intermedio)
             // Usuario debe hacer clic en "Iniciar Carga" manualmente después

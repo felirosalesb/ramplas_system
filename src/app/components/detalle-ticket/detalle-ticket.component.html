@@ -23,6 +23,14 @@
           <strong>Estado:</strong>
           <mat-chip>{{ ticket.estado_actual }}</mat-chip>
         </div>
+        <div class="info-item" *ngIf="ticket.observacion_planta">
+          <strong>Aceptada con observación:</strong>
+          <span>{{ ticket.observacion_planta }}</span>
+        </div>
+        <div class="info-item" *ngIf="huboRechazo && ticket.observaciones">
+          <strong>Motivo rechazo:</strong>
+          <span>{{ ticket.observaciones }}</span>
+        </div>
         <div class="info-item">
           <strong>Tipo Solicitud:</strong>
           <span>{{ ticket.tipo_ticket }}</span>

@@ -285,13 +285,12 @@
         class="full-width"
         *ngIf="accionLlegada === 'aceptar_observacion' || accionLlegada === 'rechazar'"
       >
-        <mat-label>Observación</mat-label>
-        <textarea 
-          matInput 
-          [(ngModel)]="observacionLlegada"
-          rows="3"
-          placeholder="Describe la observación o motivo del rechazo"
-        ></textarea>
+        <mat-label>Motivo</mat-label>
+        <mat-select [(ngModel)]="motivoObservacion">
+          <mat-option *ngFor="let motivo of motivosObservacionLista" [value]="motivo">
+            {{ motivo }}
+          </mat-option>
+        </mat-select>
       </mat-form-field>
     </mat-card-content>
 

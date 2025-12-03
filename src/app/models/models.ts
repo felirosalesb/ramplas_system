@@ -123,7 +123,7 @@ export interface AsignarMuelleCDDTO {
 export interface ConfirmarLlegadaDTO {
     ticket_id: number;
     accion: 'aceptar' | 'aceptar_observacion' | 'rechazar';
-    observacion?: string;
+    observacion?: MotivoObservacionPlanta;
 }
 
 export interface NotificacionConfig {
@@ -132,3 +132,10 @@ export interface NotificacionConfig {
     usuario_destino: string;
     ticket_id: number;
 }
+
+// Motivos estandarizados para observación o rechazo en Planta
+export type MotivoObservacionPlanta =
+    | 'Cortina no cierra'
+    | 'Paredes en mal estado'
+    | 'Piso en mal estado (lata)'
+    | 'Rampla sucia';

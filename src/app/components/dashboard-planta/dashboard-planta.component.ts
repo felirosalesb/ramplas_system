@@ -17,7 +17,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { SupabaseService } from '../../services/supabase.service';
 import { NotificationService } from '../../services/notification.service';
-import { Ticket, CreateTicketDTO, ConfirmarLlegadaDTO } from '../../models/models';
+import { Ticket, CreateTicketDTO, ConfirmarLlegadaDTO, MotivoObservacionPlanta } from '../../models/models';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { DetalleTicketComponent } from '../detalle-ticket/detalle-ticket.component';
 
@@ -51,7 +51,13 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
 
   // Para modal de confirmación de llegada
   accionLlegada: 'aceptar' | 'aceptar_observacion' | 'rechazar' | null = null;
-  observacionLlegada: string = '';
+  motivoObservacion: MotivoObservacionPlanta | '' = '';
+  motivosObservacionLista: MotivoObservacionPlanta[] = [
+    'Cortina no cierra',
+    'Paredes en mal estado',
+    'Piso en mal estado (lata)',
+    'Rampla sucia'
+  ];
 
   // Para modal de edición de ticket
   mostrarModalEdicion = false;
@@ -240,14 +246,14 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
   abrirModalConfirmacionLlegada(ticket: Ticket): void {
     this.ticketSeleccionado = ticket;
     this.accionLlegada = null;
-    this.observacionLlegada = '';
+    this.motivoObservacion = '';
   }
 
   async confirmarLlegada(): Promise<void> {
     if (!this.ticketSeleccionado || !this.accionLlegada) return;
 
-    if (this.accionLlegada === 'aceptar_observacion' && !this.observacionLlegada.trim()) {
-      alert('Debe ingresar una observación');
+    if ((this.accionLlegada === 'aceptar_observacion' || this.accionLlegada === 'rechazar') && !this.motivoObservacion) {
+      alert('Debe seleccionar un motivo');
       return;
     }
 
@@ -256,7 +262,7 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
       const dto: ConfirmarLlegadaDTO = {
         ticket_id: this.ticketSeleccionado.id,
         accion: this.accionLlegada,
-        observacion: this.observacionLlegada.trim() || undefined
+        observacion: (this.motivoObservacion || undefined) as MotivoObservacionPlanta | undefined
       };
 
       await this.supabaseService.confirmarLlegadaRampla(dto);
@@ -264,7 +270,7 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
       if (this.accionLlegada === 'rechazar') {
         this.notificationService.notificarRechazo(
           this.ticketSeleccionado.id,
-          this.observacionLlegada
+          this.motivoObservacion as string
         );
       } else {
         this.notificationService.agregarNotificacion(
@@ -291,7 +297,7 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
   cerrarModalConfirmacion(): void {
     this.ticketSeleccionado = null;
     this.accionLlegada = null;
-    this.observacionLlegada = '';
+    this.motivoObservacion = '';
   }
 
   async cambiarEstado(ticket: Ticket, nuevoEstado: any): Promise<void> {
