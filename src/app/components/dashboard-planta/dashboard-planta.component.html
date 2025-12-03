@@ -108,7 +108,7 @@
         </mat-card-content>
 
         <mat-card-actions>
-          <!-- Confirmar llegada de rampla (ahora inicia carga automáticamente) -->
+          <!-- Confirmar llegada de rampla -->
           <button 
             mat-raised-button 
             color="accent"
@@ -116,7 +116,19 @@
             (click)="abrirModalConfirmacionLlegada(ticket)"
           >
             <mat-icon>check_circle</mat-icon>
-            Confirmar Llegada e Iniciar Carga
+            Confirmar Llegada
+          </button>
+
+          <!-- Iniciar carga (RETIRO) -->
+          <button 
+            mat-raised-button 
+            color="primary"
+            *ngIf="puedeIniciarCarga(ticket)"
+            (click)="cambiarEstado(ticket, 'Carga iniciada')"
+            [disabled]="cargando"
+          >
+            <mat-icon>play_arrow</mat-icon>
+            Iniciar Carga
           </button>
 
           <!-- Finalizar carga -->
