@@ -148,6 +148,14 @@
                     
                     <span>Planta: {{ ticket.nombre_planta }}</span>
                   </div>
+                  <div class="info-item" *ngIf="ticket.observacion_planta">
+                    <mat-icon>note</mat-icon>
+                    <span><strong>Observación Planta:</strong> {{ ticket.observacion_planta }}</span>
+                  </div>
+                  <div class="info-item" *ngIf="ticket.observaciones">
+                    <mat-icon color="warn">info</mat-icon>
+                    <span><strong>Motivo:</strong> {{ ticket.observaciones }}</span>
+                  </div>
                   <div class="info-row" *ngIf="ticket.fecha_alerta_cd">
 
                     <span [class.text-warn]="estaProximoVencer(ticket.fecha_alerta_cd)">
@@ -226,6 +234,14 @@
                   <div class="detail-item" *ngIf="ticket.nombre_planta">
                     <mat-icon>location_city</mat-icon>
                     <span><strong>Planta:</strong> {{ ticket.nombre_planta }}</span>
+                  </div>
+                  <div class="detail-item" *ngIf="ticket.observacion_planta">
+                    <mat-icon>note</mat-icon>
+                    <span><strong>Observación Planta:</strong> {{ ticket.observacion_planta }}</span>
+                  </div>
+                  <div class="detail-item" *ngIf="ticket.observaciones">
+                    <mat-icon color="warn">info</mat-icon>
+                    <span><strong>Motivo:</strong> {{ ticket.observaciones }}</span>
                   </div>
                   <div class="detail-item">
                     <mat-icon>ticket</mat-icon>
@@ -321,6 +337,14 @@
                   <mat-chip [color]="getEstadoColor(ticket.estado_actual)">
                     {{ ticket.estado_actual }}
                   </mat-chip>
+                  <div class="table-detail" *ngIf="ticket.observacion_planta">
+                    <mat-icon>note</mat-icon>
+                    <span>{{ ticket.observacion_planta }}</span>
+                  </div>
+                  <div class="table-detail" *ngIf="ticket.observaciones">
+                    <mat-icon color="warn">info</mat-icon>
+                    <span>{{ ticket.observaciones }}</span>
+                  </div>
                 </td>
               </ng-container>
 
