@@ -174,7 +174,7 @@ export class SupabaseService {
             .select('tipo_ticket')
             .eq('id', dto.ticket_id)
             .single();
-        
+
         const estadoTransito = ticketData?.tipo_ticket === 'Solicitar Pallets vacíos'
             ? 'Rampla en Tránsito a Galpón'  // Va primero al galpón
             : 'Rampla en Tránsito a Planta';  // Retiro va directo a planta
@@ -259,8 +259,9 @@ export class SupabaseService {
             updates.estado_actual = 'Pendiente Asignación';
             updates.fecha_alerta_cd = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
         } else {
-            // Cambio: Confirmar llegada ahora pasa directo a "Carga iniciada"
-            nuevoEstado = 'Carga iniciada';
+            // Confirmar llegada pasa a "Rampla en Planta" (estado intermedio)
+            // Usuario debe hacer clic en "Iniciar Carga" manualmente después
+            nuevoEstado = 'Rampla en Planta';
             updates.estado_actual = nuevoEstado;
 
             if (dto.accion === 'aceptar_observacion' && dto.observacion) {
@@ -275,8 +276,7 @@ export class SupabaseService {
 
         if (error) throw error;
 
-        // Registrar ambos estados para mantener historial
-        await this.registrarTiempo(dto.ticket_id, 'Rampla en Planta', user.id);
+        // Solo registrar el nuevo estado
         await this.registrarTiempo(dto.ticket_id, nuevoEstado, user.id);
     }
 
