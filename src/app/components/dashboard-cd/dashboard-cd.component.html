@@ -420,6 +420,14 @@
                     </button>
 
                     <button mat-menu-item 
+                            *ngIf="puedeRechazarCarga(ticket)"
+                            (click)="rechazarCarga(ticket)"
+                            [disabled]="cargando">
+                      <mat-icon color="warn">cancel</mat-icon>
+                      Rechazar Carga
+                    </button>
+
+                    <button mat-menu-item 
                             *ngIf="puedeFinalizarDescarga(ticket)"
                             (click)="cambiarEstado(ticket, 'Fin Descarga')"
                             [disabled]="cargando">

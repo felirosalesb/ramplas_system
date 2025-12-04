@@ -640,6 +640,10 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
     return ticket.estado_actual === 'Inicio Descarga';
   }
 
+  puedeRechazarCarga(ticket: Ticket): boolean {
+    return ticket.estado_actual === 'Asignada a Muelle CD' || ticket.estado_actual === 'Inicio Descarga';
+  }
+
   puedeCancelarTicket(ticket: Ticket): boolean {
     return ['Rampla en Tránsito a Galpón', 'Rampla en Tránsito a Planta', 'Rampla en Tránsito'].includes(ticket.estado_actual);
   }
@@ -697,6 +701,29 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
         'error'
       );
       alert(`Error al cancelar: ${mensaje}`);
+    } finally {
+      this.cargando = false;
+    }
+  }
+
+  async rechazarCarga(ticket: Ticket): Promise<void> {
+    const motivo = prompt('Ingrese motivo del rechazo de la carga:');
+    if (!motivo || !motivo.trim()) return;
+
+    this.cargando = true;
+    try {
+      await this.supabaseService.rechazarCargaCD(ticket.id, motivo.trim());
+      this.notificationService.agregarNotificacion(
+        `Carga rechazada - Ticket #${ticket.id}`,
+        ticket.id,
+        'error'
+      );
+      await this.cargarDatos();
+    } catch (error: any) {
+      console.error('Error al rechazar carga:', error);
+      const mensaje = error?.message || 'Error al rechazar la carga';
+      this.notificationService.agregarNotificacion(mensaje, 0, 'error');
+      alert(mensaje);
     } finally {
       this.cargando = false;
     }

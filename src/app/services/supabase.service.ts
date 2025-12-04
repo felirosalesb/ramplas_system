@@ -643,6 +643,58 @@ export class SupabaseService {
         }
     }
 
+    async rechazarCargaCD(ticketId: number, motivo: string): Promise<void> {
+        const user = this.getCurrentUser();
+        if (!user) throw new Error('Usuario no autenticado');
+
+        const { data: ticket } = await this.supabase
+            .from('tickets')
+            .select('id, planta_user_id, nombre_planta, rampla_asignada_id, muelle_asignado_id, rampla_asignada:ramplas!rampla_asignada_id(nombre)')
+            .eq('id', ticketId)
+            .single();
+
+        if (!ticket) throw new Error('Ticket no encontrado');
+
+        const { error: updErr } = await this.supabase
+            .from('tickets')
+            .update({ estado_actual: 'Rechazada', observaciones: motivo })
+            .eq('id', ticketId);
+        if (updErr) throw updErr;
+
+        if (ticket.rampla_asignada_id) {
+            await this.supabase
+                .from('ramplas')
+                .update({ estado: 'Libre', ticket_actual_id: null })
+                .eq('id', ticket.rampla_asignada_id);
+        }
+        if (ticket.muelle_asignado_id) {
+            await this.supabase
+                .from('muelles')
+                .update({ estado: 'Libre', ticket_actual_id: null })
+                .eq('id', ticket.muelle_asignado_id);
+        }
+
+        await this.registrarTiempo(ticketId, 'Rechazada', user.id);
+
+        const nombreRampla = (ticket as any)?.rampla_asignada?.nombre || 'Rampla';
+        // Notificar Planta
+        this.notificationService.agregarNotificacion(
+            `Carga rechazada en CD - Ticket #${ticketId}. Rampla: ${nombreRampla}. Motivo: ${motivo}`,
+            ticketId,
+            'error',
+            'alta',
+            ['planta']
+        );
+        // Notificar Admin
+        this.notificationService.agregarNotificacion(
+            `ADMIN: Carga rechazada - Ticket #${ticketId}. Rampla: ${nombreRampla}. Motivo: ${motivo}`,
+            ticketId,
+            'error',
+            'alta',
+            ['admin']
+        );
+    }
+
     async finalizarDescarga(ticketId: number): Promise<void> {
         const user = this.getCurrentUser();
         if (!user) throw new Error('Usuario no autenticado');
