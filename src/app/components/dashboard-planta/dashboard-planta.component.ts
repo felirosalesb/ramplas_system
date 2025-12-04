@@ -83,7 +83,8 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
   ) {
     this.formularioSolicitud = this.fb.group({
       tipo_ticket: ['Retiro pallets producción', [Validators.required]],
-      muelle_planta: ['', [Validators.required, Validators.min(1)]]
+      muelle_planta: ['', [Validators.required, Validators.min(1)]],
+      cantidad_pallet: [null]
     });
   }
 
@@ -191,6 +192,17 @@ export class DashboardPlantaComponent implements OnInit, OnDestroy {
     console.log('Estado de controles:', {
       muelle_planta: this.formularioSolicitud.get('muelle_planta')?.value
     });
+
+    // Validación dinámica: cantidad_pallet es obligatoria para "Solicitar Pallets vacíos"
+    const tipo = this.formularioSolicitud.get('tipo_ticket')?.value;
+    const cantidadCtrl = this.formularioSolicitud.get('cantidad_pallet');
+    if (tipo === 'Solicitar Pallets vacíos') {
+      cantidadCtrl?.setValidators([Validators.required, Validators.min(1)]);
+    } else {
+      cantidadCtrl?.clearValidators();
+      cantidadCtrl?.setValue(null);
+    }
+    cantidadCtrl?.updateValueAndValidity();
 
     if (this.formularioSolicitud.invalid) {
       console.log('Formulario inválido');

@@ -46,6 +46,20 @@
               {{ getErrorMessage('muelle_planta') }}
             </mat-error>
           </mat-form-field>
+
+          <mat-form-field appearance="outline" *ngIf="formularioSolicitud.get('tipo_ticket')?.value === 'Solicitar Pallets vacíos'">
+            <mat-label>Cantidad de Pallets a Solicitar</mat-label>
+            <input 
+              matInput 
+              type="number" 
+              formControlName="cantidad_pallet"
+              placeholder="Ej: 33"
+              min="1"
+            >
+            <mat-error *ngIf="formularioSolicitud.get('cantidad_pallet')?.invalid && formularioSolicitud.get('cantidad_pallet')?.touched">
+              {{ getErrorMessage('cantidad_pallet') || 'Ingrese un número mayor a 0' }}
+            </mat-error>
+          </mat-form-field>
         </div>
 
         <div class="form-actions">
