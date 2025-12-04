@@ -126,6 +126,9 @@
             <div class="info-row">
               <strong>Pallets:</strong> {{ rampla.ticket.cantidad_pallet }}
             </div>
+            <div class="info-row" *ngIf="rampla.ticket.nombre_planta">
+              <strong>Destino Planta:</strong> {{ rampla.ticket.nombre_planta }}
+            </div>
             <div class="info-row" *ngIf="rampla.tiempoEnEstado">
               <strong>Tiempo:</strong> {{ rampla.tiempoEnEstado }}
             </div>
@@ -177,6 +180,10 @@
           <div class="detail-column">
             <span class="label">Pallets:</span>
             <span class="value">{{ rampla.ticket.cantidad_pallet }}</span>
+          </div>
+          <div class="detail-column" *ngIf="rampla.ticket.nombre_planta">
+            <span class="label">Destino:</span>
+            <span class="value">{{ rampla.ticket.nombre_planta }}</span>
           </div>
           <div class="detail-column" *ngIf="rampla.tiempoEnEstado">
             <span class="label">Tiempo:</span>
