@@ -421,7 +421,7 @@
 
                     <button mat-menu-item 
                             *ngIf="puedeRechazarCarga(ticket)"
-                            (click)="rechazarCarga(ticket)"
+                          (click)="abrirModalRechazo(ticket)"
                             [disabled]="cargando">
                       <mat-icon color="warn">cancel</mat-icon>
                       Rechazar Carga
@@ -596,6 +596,75 @@
     </div>
   </div>
 </div>
+
+<!-- Modal: Rechazar Carga -->
+<div class="modal-overlay" *ngIf="ticketSeleccionado && modalActivo === 'rechazo'" (click)="cerrarModalRechazo()">
+  <div class="modal-content modal-cancelar" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>
+        <mat-icon color="warn">cancel</mat-icon>
+        Rechazar Carga - Ticket #{{ ticketSeleccionado.id }}
+      </h2>
+      <button mat-icon-button (click)="cerrarModalRechazo()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="warning-message">
+        <mat-icon>info</mat-icon>
+        <p>Esta acción marcará el ticket como rechazado, liberará la rampla y el muelle, y notificará a Planta y Administración con el motivo seleccionado.</p>
+      </div>
+
+      <div class="ticket-summary">
+        <h3>Información del Ticket</h3>
+        <p><strong>Tipo:</strong> {{ ticketSeleccionado.tipo_ticket }}</p>
+        <p><strong>Planta:</strong> {{ ticketSeleccionado.nombre_planta }}</p>
+        <p><strong>Muelle Planta:</strong> {{ ticketSeleccionado.muelle_planta }}</p>
+        <p *ngIf="ticketSeleccionado.rampla_asignada"><strong>Rampla:</strong> {{ ticketSeleccionado.rampla_asignada.nombre }}</p>
+        <p *ngIf="ticketSeleccionado.muelle_asignado"><strong>Muelle CD:</strong> {{ ticketSeleccionado.muelle_asignado.nombre }}</p>
+        <p><strong>Estado:</strong> {{ ticketSeleccionado.estado_actual }}</p>
+      </div>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Motivo de Rechazo</mat-label>
+        <mat-select [(ngModel)]="motivoRechazoSeleccionado" required>
+          <mat-option *ngFor="let motivo of motivosRechazo" [value]="motivo">
+            {{ motivo }}
+          </mat-option>
+        </mat-select>
+        <mat-hint>Seleccione el motivo del rechazo</mat-hint>
+      </mat-form-field>
+
+      <mat-form-field 
+        appearance="outline" 
+        class="full-width"
+        *ngIf="motivoRechazoSeleccionado === 'Otro'">
+        <mat-label>Especifique el motivo</mat-label>
+        <textarea 
+          matInput 
+          [(ngModel)]="otraRazonRechazo"
+          rows="3"
+          placeholder="Describa el motivo del rechazo"
+          required
+        ></textarea>
+      </mat-form-field>
+    </div>
+
+    <div class="modal-actions">
+      <button mat-button (click)="cerrarModalRechazo()">Volver</button>
+      <button 
+        mat-raised-button 
+        color="warn" 
+        (click)="confirmarRechazo()"
+        [disabled]="!motivoRechazoSeleccionado || (motivoRechazoSeleccionado === 'Otro' && !otraRazonRechazo.trim()) || cargando"
+      >
+        <mat-spinner *ngIf="cargando" diameter="20"></mat-spinner>
+        <span *ngIf="!cargando">Confirmar Rechazo</span>
+      </button>
+    </div>
+  </div>
+ </div>
 
 <style>
 .dashboard-container {

@@ -68,7 +68,7 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
   ramplaSeleccionada: number | null = null;
   muelleSeleccionado: number | null = null;
   muelleCD: number | null = null;
-  modalActivo: 'rampla' | 'muelle' | 'cancelar' | null = null;
+  modalActivo: 'rampla' | 'muelle' | 'cancelar' | 'rechazo' | null = null;
 
   // Modal de cancelación
   motivosCancelacion = [
@@ -77,6 +77,15 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
   ];
   motivoCancelacionSeleccionado: string = '';
   otraRazonCancelacion: string = '';
+
+  // Modal de rechazo de carga
+  motivosRechazo = [
+    'etiqueta borrosa',
+    'no cumple con pallet perfecto',
+    'Otro'
+  ];
+  motivoRechazoSeleccionado: string = '';
+  otraRazonRechazo: string = '';
 
   cargando = false;
   private subscriptions: Subscription[] = [];
@@ -706,18 +715,44 @@ export class DashboardCdComponent implements OnInit, OnDestroy {
     }
   }
 
-  async rechazarCarga(ticket: Ticket): Promise<void> {
-    const motivo = prompt('Ingrese motivo del rechazo de la carga:');
-    if (!motivo || !motivo.trim()) return;
+  abrirModalRechazo(ticket: Ticket): void {
+    this.ticketSeleccionado = ticket;
+    this.motivoRechazoSeleccionado = '';
+    this.otraRazonRechazo = '';
+    this.modalActivo = 'rechazo';
+  }
+
+  cerrarModalRechazo(): void {
+    this.ticketSeleccionado = null;
+    this.motivoRechazoSeleccionado = '';
+    this.otraRazonRechazo = '';
+    this.modalActivo = null;
+  }
+
+  async confirmarRechazo(): Promise<void> {
+    if (!this.ticketSeleccionado || !this.motivoRechazoSeleccionado) {
+      alert('Debe seleccionar un motivo de rechazo');
+      return;
+    }
+
+    if (this.motivoRechazoSeleccionado === 'Otro' && !this.otraRazonRechazo.trim()) {
+      alert('Debe especificar el motivo de rechazo');
+      return;
+    }
+
+    const motivo = this.motivoRechazoSeleccionado === 'Otro'
+      ? this.otraRazonRechazo.trim()
+      : this.motivoRechazoSeleccionado;
 
     this.cargando = true;
     try {
-      await this.supabaseService.rechazarCargaCD(ticket.id, motivo.trim());
+      await this.supabaseService.rechazarCargaCD(this.ticketSeleccionado.id, motivo);
       this.notificationService.agregarNotificacion(
-        `Carga rechazada - Ticket #${ticket.id}`,
-        ticket.id,
+        `Carga rechazada - Ticket #${this.ticketSeleccionado.id}`,
+        this.ticketSeleccionado.id,
         'error'
       );
+      this.cerrarModalRechazo();
       await this.cargarDatos();
     } catch (error: any) {
       console.error('Error al rechazar carga:', error);
