@@ -1,0 +1,356 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                ║
+║                  ⚠️  CONFIGURACIONES PENDIENTES - IMPORTANTE ⚠️                 ║
+║                                                                                ║
+║  Este archivo contiene todas las configuraciones que deben ser actualizadas   ║
+║  antes de desplegar el sistema en producción.                                 ║
+║                                                                                ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+Fecha: 11 de diciembre de 2025
+Sistema: Gestión de Ramplas v1.0
+Desarrollador original: Felipe Rosales Bravo
+
+════════════════════════════════════════════════════════════════════════════════
+1. CREDENCIALES DE SUPABASE (❗ CRÍTICO ❗)
+════════════════════════════════════════════════════════════════════════════════
+
+Las credenciales actuales en el código SON PERSONALES y deben ser reemplazadas
+con las credenciales del proyecto de Supabase de la empresa.
+
+📁 ARCHIVOS A MODIFICAR:
+   • src/environments/environment.ts
+   • src/environments/environment.prod.ts
+
+🔑 VALORES A REEMPLAZAR:
+
+   ACTUAL (Personal - Felipe):
+   ────────────────────────────────────────────────────────────────────────
+   supabaseUrl: 'https://xcvmtlvaskkrencfzobb.supabase.co'
+   supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI...'
+   ────────────────────────────────────────────────────────────────────────
+
+   NUEVO (Empresa):
+   ────────────────────────────────────────────────────────────────────────
+   supabaseUrl: 'https://[proyecto-empresa].supabase.co'
+   supabaseKey: '[tu-anon-key-de-produccion]'
+   ────────────────────────────────────────────────────────────────────────
+
+📋 PASOS PARA OBTENER NUEVAS CREDENCIALES:
+
+   1. Crear cuenta en Supabase con email corporativo
+   2. Crear nuevo proyecto (ej: "ramplas-production")
+   3. Ir a Project Settings → API
+   4. Copiar:
+      - Project URL → supabaseUrl
+      - anon/public key → supabaseKey
+   5. Ejecutar database/database-schema.sql en el nuevo proyecto
+   6. Configurar políticas RLS (ver README.md)
+
+⚠️ IMPORTANTE:
+   • NO usar las credenciales actuales en producción
+   • Las credenciales actuales pueden ser revocadas en cualquier momento
+   • Configurar variables de entorno en el servidor de producción
+   • NO subir credenciales reales a repositorios públicos
+
+
+════════════════════════════════════════════════════════════════════════════════
+2. MICROSOFT TEAMS WEBHOOK (Opcional)
+════════════════════════════════════════════════════════════════════════════════
+
+El sistema soporta notificaciones a Microsoft Teams, pero el webhook actual
+es personal y debe ser reemplazado o removido.
+
+📁 ARCHIVOS AFECTADOS:
+   • src/environments/environment.ts
+   • src/environments/environment.prod.ts
+   • src/app/services/notification.service.ts
+
+🔗 VALOR ACTUAL:
+   ────────────────────────────────────────────────────────────────────────
+   teamsWebhookUrl: 'TU_TEAMS_WEBHOOK_URL'
+   ────────────────────────────────────────────────────────────────────────
+
+📋 OPCIONES:
+
+   OPCIÓN A: Configurar webhook corporativo
+   ──────────────────────────────────────────────────────────────────────
+   1. Ir al canal de Teams donde quieres recibir notificaciones
+   2. Click en ⋯ (más opciones) → Connectors
+   3. Buscar "Incoming Webhook" y configurar
+   4. Copiar la URL generada
+   5. Reemplazar en environment.ts y environment.prod.ts
+
+   OPCIÓN B: Deshabilitar Teams (si no se usa)
+   ──────────────────────────────────────────────────────────────────────
+   1. En environment.ts y environment.prod.ts:
+      teamsWebhookUrl: ''  // Dejar vacío
+   
+   2. En notification.service.ts (línea ~313):
+      Comentar o remover la función enviarNotificacionTeams()
+   
+   3. Buscar todas las llamadas a enviarNotificacionTeams() y comentarlas
+
+
+════════════════════════════════════════════════════════════════════════════════
+3. SONIDOS DE NOTIFICACIÓN
+════════════════════════════════════════════════════════════════════════════════
+
+El sistema usa archivos de sonido para notificaciones. Verifica que existan
+o reemplázalos con sonidos corporativos.
+
+📁 UBICACIÓN:
+   • src/assets/sounds/
+
+📋 ARCHIVOS NECESARIOS:
+   • notification.mp3  (o .wav) - Notificación estándar
+   • alert.mp3        (o .wav) - Alertas importantes
+   • success.mp3      (o .wav) - Operaciones exitosas
+
+📋 PASOS:
+
+   1. Verificar que los archivos existan en src/assets/sounds/
+   2. Si faltan, agregar archivos de sonido apropiados
+   3. Actualizar rutas en notification.service.ts si es necesario
+   4. Alternativa: Deshabilitar sonidos comentando la función reproducirSonido()
+
+
+════════════════════════════════════════════════════════════════════════════════
+4. USUARIOS INICIALES
+════════════════════════════════════════════════════════════════════════════════
+
+El sistema requiere usuarios iniciales para funcionar. No hay usuarios de
+prueba en el código.
+
+📋 PASOS PARA CREAR USUARIOS:
+
+   1. En Supabase → Authentication → Users
+   2. Click en "Add User" → "Create new user"
+   3. Crear usuarios para cada rol:
+
+      • Admin del Sistema:
+        ────────────────────────────────────────────────────────────────
+        Email: admin@empresa.com
+        Password: [generar segura]
+        
+        SQL para agregar a tabla usuarios:
+        INSERT INTO usuarios (id, email, rol, nombre)
+        VALUES ('[uuid-generado]', 'admin@empresa.com', 'admin', 'Administrador Sistema');
+
+      • Usuario CD (Centro de Distribución):
+        ────────────────────────────────────────────────────────────────
+        Email: cd@empresa.com
+        Password: [generar segura]
+        
+        INSERT INTO usuarios (id, email, rol, nombre)
+        VALUES ('[uuid-generado]', 'cd@empresa.com', 'cd', 'Operador CD');
+
+      • Usuario Planta:
+        ────────────────────────────────────────────────────────────────
+        Email: planta@empresa.com
+        Password: [generar segura]
+        
+        INSERT INTO usuarios (id, email, rol, nombre, nombre_planta)
+        VALUES ('[uuid-generado]', 'planta@empresa.com', 'planta', 'Operador Planta', 'Planta Santiago');
+
+      • Usuario Galpón:
+        ────────────────────────────────────────────────────────────────
+        Email: galpon@empresa.com
+        Password: [generar segura]
+        
+        INSERT INTO usuarios (id, email, rol, nombre)
+        VALUES ('[uuid-generado]', 'galpon@empresa.com', 'galpon', 'Operador Galpón');
+
+   4. IMPORTANTE: El UUID debe coincidir entre auth.users y la tabla usuarios
+
+
+════════════════════════════════════════════════════════════════════════════════
+5. DATOS INICIALES (RAMPLAS Y MUELLES)
+════════════════════════════════════════════════════════════════════════════════
+
+El sistema requiere ramplas y muelles para funcionar. Actualmente no hay
+datos de prueba.
+
+📋 CREAR RAMPLAS INICIALES:
+
+   SQL de ejemplo (ajustar según inventario real):
+   ────────────────────────────────────────────────────────────────────────
+   INSERT INTO ramplas (nombre, tipo_rampla, estado, activo)
+   VALUES 
+       ('R-001', 'frugon_cerrado', 'Libre', true),
+       ('R-002', 'frugon_cerrado', 'Libre', true),
+       ('R-003', 'cortina', 'Libre', true),
+       ('R-004', 'cortina', 'Libre', true),
+       ('R-005', 'frugon_cerrado', 'Libre', true);
+
+📋 CREAR MUELLES INICIALES:
+
+   SQL de ejemplo (ajustar según instalaciones reales):
+   ────────────────────────────────────────────────────────────────────────
+   INSERT INTO muelles (nombre, estado, activo)
+   VALUES 
+       ('Muelle A1', 'Libre', true),
+       ('Muelle A2', 'Libre', true),
+       ('Muelle B1', 'Libre', true),
+       ('Muelle B2', 'Libre', true),
+       ('Muelle C1', 'Libre', true);
+
+📋 PASOS:
+
+   1. Definir nomenclatura de ramplas según inventario real
+   2. Definir nomenclatura de muelles según planta física
+   3. Ejecutar SQL en Supabase SQL Editor
+   4. Verificar en el Monitor de Ramplas (usuario admin)
+
+
+════════════════════════════════════════════════════════════════════════════════
+6. POLÍTICAS DE ROW LEVEL SECURITY (RLS)
+════════════════════════════════════════════════════════════════════════════════
+
+⚠️ CRÍTICO PARA SEGURIDAD ⚠️
+
+El schema SQL incluye la estructura básica, pero las políticas RLS deben
+ajustarse según las reglas de negocio específicas de la empresa.
+
+📋 POLÍTICAS RECOMENDADAS:
+
+   Ver README.md sección "Configuración de Row Level Security (RLS)"
+
+📋 PASOS:
+
+   1. Revisar políticas actuales en Supabase → Authentication → Policies
+   2. Ajustar políticas según roles:
+      • Planta: Solo sus propios tickets
+      • CD: Todos los tickets
+      • Galpón: Tickets de pallets vacíos
+      • Admin: Acceso total
+   3. Probar con cada tipo de usuario
+   4. Documentar políticas finales
+
+
+════════════════════════════════════════════════════════════════════════════════
+7. CONFIGURACIÓN DE REALTIME
+════════════════════════════════════════════════════════════════════════════════
+
+Supabase Realtime debe estar habilitado para que las actualizaciones en
+tiempo real funcionen.
+
+📋 PASOS:
+
+   1. En Supabase → Database → Replication
+   2. Habilitar Realtime para las siguientes tablas:
+      ✓ tickets
+      ✓ ramplas
+      ✓ muelles
+      ✓ notificaciones (opcional pero recomendado)
+   3. Verificar en los dashboards que se actualicen automáticamente
+
+
+════════════════════════════════════════════════════════════════════════════════
+8. VARIABLES DE ENTORNO EN PRODUCCIÓN
+════════════════════════════════════════════════════════════════════════════════
+
+Si despliegas en Vercel, Netlify u otro servicio, configura variables de
+entorno en lugar de hardcodearlas en environment.prod.ts.
+
+📋 VERCEL:
+   ────────────────────────────────────────────────────────────────────────
+   1. Ir a proyecto en vercel.com
+   2. Settings → Environment Variables
+   3. Agregar:
+      - SUPABASE_URL = https://[proyecto].supabase.co
+      - SUPABASE_KEY = [anon-key]
+      - TEAMS_WEBHOOK_URL = [webhook-url] (opcional)
+   4. Redeploy el proyecto
+
+📋 NETLIFY:
+   ────────────────────────────────────────────────────────────────────────
+   Similar a Vercel, en Site Settings → Environment variables
+
+⚠️ Nota: Requiere modificar environment.prod.ts para leer de process.env
+
+
+════════════════════════════════════════════════════════════════════════════════
+9. TESTING Y VALIDACIÓN
+════════════════════════════════════════════════════════════════════════════════
+
+Antes de usar en producción, validar:
+
+✓ CHECKLIST DE VALIDACIÓN:
+   ────────────────────────────────────────────────────────────────────────
+   [ ] Credenciales de Supabase actualizadas
+   [ ] Base de datos creada con database-schema.sql
+   [ ] RLS configurado y probado
+   [ ] Usuarios iniciales creados
+   [ ] Ramplas y muelles iniciales creados
+   [ ] Realtime habilitado en Supabase
+   [ ] Login funciona con usuarios de cada rol
+   [ ] Flujo completo probado:
+       [ ] Crear ticket desde Planta
+       [ ] Asignar rampla desde CD
+       [ ] Confirmar llegada
+       [ ] Finalizar carga
+       [ ] Asignar muelle
+       [ ] Finalizar descarga
+   [ ] Notificaciones funcionando
+   [ ] Alertas automáticas activándose correctamente
+   [ ] Exportación a Excel funciona
+   [ ] Webhook de Teams configurado (si aplica)
+
+
+════════════════════════════════════════════════════════════════════════════════
+10. CONTACTO Y TRANSFERENCIA
+════════════════════════════════════════════════════════════════════════════════
+
+Este proyecto fue desarrollado como MVP por Felipe Rosales Bravo durante su
+periodo en la empresa.
+
+📋 DOCUMENTACIÓN DISPONIBLE:
+   • README.md - Guía completa de instalación y uso
+   • docs/DOCUMENTACION_TECNICA.md - Arquitectura técnica
+   • docs/DOCUMENTACION_TECNICA_COMPLEMENTARIA.md - Detalles avanzados
+   • docs/MANUAL_USUARIO.md - Manual para usuarios finales
+   • database/database-schema.sql - Schema completo de BD
+
+📋 RECOMENDACIONES PARA EL SIGUIENTE DESARROLLADOR:
+
+   1. Leer README.md completamente
+   2. Revisar DOCUMENTACION_TECNICA.md para entender la arquitectura
+   3. Ejecutar el sistema localmente antes de modificar
+   4. Familiarizarse con Supabase y Angular 19
+   5. El código está comentado en las partes críticas
+   6. Los servicios (supabase.service.ts y notification.service.ts)
+      contienen toda la lógica de negocio
+
+📋 MEJORAS FUTURAS SUGERIDAS:
+
+   • Implementar pruebas unitarias y e2e
+   • Agregar más dashboards analíticos
+   • Implementar sistema de caché
+   • Crear app móvil complementaria
+   • Agregar más reportes personalizables
+   • Implementar sistema de backup automático
+   • Mejorar el sistema de notificaciones push
+   • Agregar más filtros en las vistas
+
+
+════════════════════════════════════════════════════════════════════════════════
+                              ⚠️  ADVERTENCIA FINAL ⚠️
+════════════════════════════════════════════════════════════════════════════════
+
+Este sistema fue desarrollado como MVP (Minimum Viable Product) y está
+FUNCIONAL, pero requiere las configuraciones mencionadas en este documento
+antes de ser usado en producción.
+
+NO uses las credenciales actuales en producción. Son personales y pueden
+ser revocadas en cualquier momento.
+
+SIEMPRE realiza un backup de la base de datos antes de hacer cambios
+estructurales.
+
+PRUEBA en un entorno de desarrollo antes de aplicar cambios en producción.
+
+════════════════════════════════════════════════════════════════════════════════
+
+Fin del documento.
+Última actualización: 11 de diciembre de 2025

@@ -1,17 +1,41 @@
 # See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
+# ═══════════════════════════════════════════════════════════════════════════
+# IMPORTANTE: Seguridad y Credenciales
+# ═══════════════════════════════════════════════════════════════════════════
+# ⚠️ NUNCA subir archivos con credenciales reales al repositorio
+# ⚠️ Los archivos de environment con credenciales reales deben estar aquí
+
+# Descomentar estas líneas si tienes credenciales reales en environment
+# src/environments/environment.ts
+# src/environments/environment.prod.ts
+
+# Archivos de configuración local con credenciales
+*.local.ts
+*.secret.*
+.env
+.env.local
+.env.production
+
+# ═══════════════════════════════════════════════════════════════════════════
 # Compiled output
+# ═══════════════════════════════════════════════════════════════════════════
 /dist
 /tmp
 /out-tsc
 /bazel-out
 
+# ═══════════════════════════════════════════════════════════════════════════
 # Node
+# ═══════════════════════════════════════════════════════════════════════════
 /node_modules
 npm-debug.log
 yarn-error.log
+package-lock.json
 
+# ═══════════════════════════════════════════════════════════════════════════
 # IDEs and editors
+# ═══════════════════════════════════════════════════════════════════════════
 .idea/
 .project
 .classpath
@@ -19,6 +43,7 @@ yarn-error.log
 *.launch
 .settings/
 *.sublime-workspace
+*.sublime-project
 
 # Visual Studio Code
 .vscode/*
@@ -28,7 +53,9 @@ yarn-error.log
 !.vscode/extensions.json
 .history/*
 
+# ═══════════════════════════════════════════════════════════════════════════
 # Miscellaneous
+# ═══════════════════════════════════════════════════════════════════════════
 /.angular/cache
 .sass-cache/
 /connect.lock
@@ -37,7 +64,31 @@ yarn-error.log
 testem.log
 /typings
 
+# ═══════════════════════════════════════════════════════════════════════════
 # System files
+# ═══════════════════════════════════════════════════════════════════════════
 .DS_Store
 Thumbs.db
 .vercel
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Build artifacts
+# ═══════════════════════════════════════════════════════════════════════════
+*.js.map
+*.css.map
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Logs
+# ═══════════════════════════════════════════════════════════════════════════
+*.log
+logs/
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Archivos temporales
+# ═══════════════════════════════════════════════════════════════════════════
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+

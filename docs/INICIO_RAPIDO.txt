@@ -1,0 +1,355 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                ║
+║           🚀 GUÍA DE INICIO RÁPIDO PARA EL SIGUIENTE DESARROLLADOR 🚀          ║
+║                                                                                ║
+║                   Sistema de Gestión de Ramplas v1.0                          ║
+║                                                                                ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+Hola! 👋
+
+Este archivo te guiará paso a paso para tomar control del proyecto.
+El sistema está FUNCIONAL pero requiere configuración de credenciales.
+
+════════════════════════════════════════════════════════════════════════════════
+📚 PASO 1: LEER LA DOCUMENTACIÓN (15 minutos)
+════════════════════════════════════════════════════════════════════════════════
+
+Lee estos archivos en orden:
+
+1️⃣  README.md
+    → Guía completa de instalación y configuración
+    → Empieza aquí primero
+
+2️⃣  CONFIGURACION_PENDIENTE.txt
+    → ⚠️ CRÍTICO: Lista de todas las APIs y configuraciones personales
+    → Lo que DEBES cambiar antes de usar en producción
+
+3️⃣  docs/DOCUMENTACION_TECNICA.md
+    → Arquitectura del sistema
+    → Cómo funciona internamente
+
+4️⃣  docs/MANUAL_USUARIO.md
+    → Cómo usar el sistema (perspectiva de usuarios finales)
+
+
+════════════════════════════════════════════════════════════════════════════════
+⚙️ PASO 2: CONFIGURAR SUPABASE (20 minutos)
+════════════════════════════════════════════════════════════════════════════════
+
+Las credenciales actuales son PERSONALES y deben ser reemplazadas.
+
+2.1. Crear Proyecto de Supabase
+─────────────────────────────────────────────────────────────────────────────
+   1. Ve a https://supabase.com/
+   2. Crea cuenta con email corporativo
+   3. Crea nuevo proyecto:
+      Nombre: ramplas-production (o el que prefieras)
+      Región: Más cercana a tu ubicación
+      Contraseña BD: Usa una segura y guárdala
+
+2.2. Obtener Credenciales
+─────────────────────────────────────────────────────────────────────────────
+   1. Ve a Project Settings → API
+   2. Copia:
+      • Project URL → Lo necesitarás para environment.ts
+      • anon/public key → Lo necesitarás para environment.ts
+
+2.3. Crear la Base de Datos
+─────────────────────────────────────────────────────────────────────────────
+   1. En Supabase, ve a SQL Editor
+   2. Abre el archivo: database/database-schema.sql
+   3. Copia TODO el contenido
+   4. Pégalo en SQL Editor y ejecuta (Run)
+   5. Verifica que se crearon las tablas:
+      ✓ usuarios
+      ✓ tickets
+      ✓ ramplas
+      ✓ muelles
+      ✓ registros_tiempo
+      ✓ notificaciones
+
+2.4. Habilitar Realtime
+─────────────────────────────────────────────────────────────────────────────
+   1. En Supabase, ve a Database → Replication
+   2. Habilita Realtime para:
+      ✓ tickets
+      ✓ ramplas
+      ✓ muelles
+
+2.5. Configurar Row Level Security (RLS)
+─────────────────────────────────────────────────────────────────────────────
+   Ver README.md sección "Configurar Row Level Security"
+   Ejecuta los comandos SQL para habilitar RLS en todas las tablas
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔧 PASO 3: ACTUALIZAR CREDENCIALES EN EL CÓDIGO (5 minutos)
+════════════════════════════════════════════════════════════════════════════════
+
+3.1. Archivo de Desarrollo
+─────────────────────────────────────────────────────────────────────────────
+   Edita: src/environments/environment.ts
+
+   Reemplaza:
+   supabaseUrl: 'https://TU-PROYECTO.supabase.co'
+   supabaseKey: 'TU_SUPABASE_ANON_KEY_AQUI'
+
+   Con tus credenciales de Supabase del paso 2.2
+
+3.2. Archivo de Producción
+─────────────────────────────────────────────────────────────────────────────
+   Edita: src/environments/environment.prod.ts
+
+   Usa las mismas credenciales (o crea un proyecto separado para producción)
+
+
+════════════════════════════════════════════════════════════════════════════════
+💻 PASO 4: INSTALAR Y EJECUTAR (10 minutos)
+════════════════════════════════════════════════════════════════════════════════
+
+En la terminal, en la carpeta del proyecto:
+
+# Instalar dependencias
+npm install
+
+# Iniciar servidor de desarrollo
+npm start
+
+# La app estará en: http://localhost:4200
+
+Si hay errores:
+- Verifica que Node.js esté instalado (node --version)
+- Verifica que las credenciales estén correctas
+- Revisa la consola del navegador (F12) para errores
+
+
+════════════════════════════════════════════════════════════════════════════════
+👤 PASO 5: CREAR USUARIOS DE PRUEBA (10 minutos)
+════════════════════════════════════════════════════════════════════════════════
+
+El sistema necesita usuarios para funcionar.
+
+5.1. Crear Usuario en Supabase Auth
+─────────────────────────────────────────────────────────────────────────────
+   1. En Supabase, ve a Authentication → Users
+   2. Click en "Add User" → "Create new user"
+   3. Email: admin@tuempresa.com
+   4. Password: (usa una segura)
+   5. Copia el UUID generado (lo necesitarás)
+
+5.2. Agregar Usuario a la Tabla 'usuarios'
+─────────────────────────────────────────────────────────────────────────────
+   En SQL Editor de Supabase:
+
+   INSERT INTO usuarios (id, email, rol, nombre)
+   VALUES 
+     ('UUID-COPIADO-DEL-PASO-ANTERIOR', 
+      'admin@tuempresa.com', 
+      'admin', 
+      'Administrador Sistema');
+
+5.3. Crear Más Usuarios (Opcional)
+─────────────────────────────────────────────────────────────────────────────
+   Repite los pasos 5.1 y 5.2 para crear usuarios de cada rol:
+   
+   • admin → Acceso total
+   • cd → Centro de distribución
+   • planta → Operador de planta (agregar nombre_planta)
+   • galpon → Operador de galpón
+
+
+════════════════════════════════════════════════════════════════════════════════
+🚚 PASO 6: CREAR RAMPLAS Y MUELLES (5 minutos)
+════════════════════════════════════════════════════════════════════════════════
+
+En SQL Editor de Supabase:
+
+-- Ramplas de ejemplo
+INSERT INTO ramplas (nombre, tipo_rampla, estado, activo)
+VALUES 
+    ('R-001', 'frugon_cerrado', 'Libre', true),
+    ('R-002', 'frugon_cerrado', 'Libre', true),
+    ('R-003', 'cortina', 'Libre', true);
+
+-- Muelles de ejemplo
+INSERT INTO muelles (nombre, estado, activo)
+VALUES 
+    ('Muelle A1', 'Libre', true),
+    ('Muelle A2', 'Libre', true),
+    ('Muelle B1', 'Libre', true);
+
+Ajusta los nombres según tu inventario real.
+
+
+════════════════════════════════════════════════════════════════════════════════
+✅ PASO 7: PROBAR EL SISTEMA (10 minutos)
+════════════════════════════════════════════════════════════════════════════════
+
+7.1. Iniciar Sesión
+─────────────────────────────────────────────────────────────────────────────
+   1. Ve a http://localhost:4200
+   2. Login con: admin@tuempresa.com
+   3. Verifica que cargas al dashboard de admin
+
+7.2. Verificar Funciones Básicas
+─────────────────────────────────────────────────────────────────────────────
+   Como Admin:
+   ✓ Ver Monitor de Ramplas
+   ✓ Ver lista de ramplas creadas
+   ✓ Ver lista de muelles creados
+
+7.3. Probar Flujo Completo (Opcional)
+─────────────────────────────────────────────────────────────────────────────
+   1. Crea usuario de planta y cd
+   2. Como planta: Crear ticket
+   3. Como cd: Asignar rampla
+   4. Como planta: Confirmar llegada
+   5. Como planta: Finalizar carga
+   6. Como cd: Asignar muelle y finalizar descarga
+
+   Si todo esto funciona, el sistema está operativo!
+
+
+════════════════════════════════════════════════════════════════════════════════
+📱 OPCIONAL: MICROSOFT TEAMS (Solo si tu empresa lo usa)
+════════════════════════════════════════════════════════════════════════════════
+
+Si quieres notificaciones en Microsoft Teams:
+
+1. En Teams, ve al canal de notificaciones
+2. Click en ⋯ → Connectors → Incoming Webhook
+3. Configura y copia la URL
+4. Pégala en:
+   - src/environments/environment.ts → teamsWebhookUrl
+   - src/environments/environment.prod.ts → teamsWebhookUrl
+
+Si NO usas Teams, deja teamsWebhookUrl como cadena vacía ''.
+
+
+════════════════════════════════════════════════════════════════════════════════
+🎯 CHECKLIST FINAL - ¿Todo listo para producción?
+════════════════════════════════════════════════════════════════════════════════
+
+Antes de desplegar a producción, verifica:
+
+[  ] Proyecto de Supabase creado con email corporativo
+[  ] Base de datos creada con database-schema.sql
+[  ] Realtime habilitado en Supabase
+[  ] RLS configurado correctamente
+[  ] Credenciales actualizadas en environment.ts y environment.prod.ts
+[  ] Usuarios iniciales creados (admin, cd, planta)
+[  ] Ramplas y muelles iniciales creados
+[  ] Login funciona correctamente
+[  ] Se pueden crear tickets
+[  ] Se pueden asignar ramplas
+[  ] Las notificaciones funcionan
+[  ] Las alertas automáticas se activan (2h, 15min, 30min)
+[  ] Exportación a Excel funciona
+[  ] Teams configurado (si aplica)
+
+
+════════════════════════════════════════════════════════════════════════════════
+🚀 DESPLIEGUE A PRODUCCIÓN (Vercel - Recomendado)
+════════════════════════════════════════════════════════════════════════════════
+
+Cuando todo funcione en local:
+
+1. Instala Vercel CLI:
+   npm install -g vercel
+
+2. Inicia sesión:
+   vercel login
+
+3. Despliega:
+   vercel --prod
+
+4. Configura variables de entorno en Vercel:
+   Settings → Environment Variables → Add:
+   - SUPABASE_URL = tu_url
+   - SUPABASE_KEY = tu_key
+   - TEAMS_WEBHOOK_URL = tu_webhook (opcional)
+
+Ver README.md sección "Despliegue en Vercel" para más detalles.
+
+
+════════════════════════════════════════════════════════════════════════════════
+📞 AYUDA Y RECURSOS
+════════════════════════════════════════════════════════════════════════════════
+
+Si tienes problemas:
+
+1. Revisa README.md sección "Solución de Problemas"
+2. Revisa la consola del navegador (F12)
+3. Revisa los logs de Supabase (API → Logs)
+4. Consulta la documentación oficial:
+   - Angular: https://angular.io/docs
+   - Supabase: https://supabase.com/docs
+   - Angular Material: https://material.angular.io/
+
+
+════════════════════════════════════════════════════════════════════════════════
+📂 ESTRUCTURA DE ARCHIVOS IMPORTANTES
+════════════════════════════════════════════════════════════════════════════════
+
+src/app/services/
+  ├── supabase.service.ts     ← TODA la lógica de negocio está aquí
+  ├── notification.service.ts ← Sistema de notificaciones
+  └── alert.service.ts        ← Alertas visuales (Material)
+
+src/app/models/
+  └── models.ts               ← Tipos, interfaces y estados del sistema
+
+src/app/components/
+  ├── dashboard-cd/           ← Dashboard Centro Distribución
+  ├── dashboard-planta/       ← Dashboard Planta
+  ├── dashboard-bodega/       ← Dashboard Galpón
+  └── monitor-ramplas/        ← Monitor Admin
+
+database/
+  └── database-schema.sql     ← Script completo de base de datos
+
+docs/
+  ├── DOCUMENTACION_TECNICA.md
+  ├── DOCUMENTACION_TECNICA_COMPLEMENTARIA.md
+  └── MANUAL_USUARIO.md
+
+
+════════════════════════════════════════════════════════════════════════════════
+💡 TIPS PARA EL DESARROLLO
+════════════════════════════════════════════════════════════════════════════════
+
+1. El código está comentado en las partes críticas
+2. Usa la documentación técnica como referencia
+3. Los servicios tienen JSDoc explicando cada función
+4. Antes de modificar, prueba el flujo completo para entender el sistema
+5. Haz commits frecuentes con mensajes descriptivos
+6. Siempre prueba en desarrollo antes de desplegar a producción
+
+
+════════════════════════════════════════════════════════════════════════════════
+⚠️ ADVERTENCIA FINAL
+════════════════════════════════════════════════════════════════════════════════
+
+• NO uses las credenciales que vienen en el código de ejemplo
+• SIEMPRE haz backup de la base de datos antes de cambios estructurales
+• CONFIGURA correctamente RLS para seguridad en producción
+• LEE la documentación técnica antes de hacer cambios grandes
+
+
+════════════════════════════════════════════════════════════════════════════════
+
+¡Éxito con el proyecto! 🚀
+
+El sistema está funcional y bien documentado. Solo necesita configuración.
+
+Si tienes dudas, toda la información está en:
+- README.md
+- CONFIGURACION_PENDIENTE.txt
+- docs/
+
+Desarrollado por: Felipe Rosales Bravo
+Última actualización: 11 de diciembre de 2025
+Versión: 1.0.0 - MVP Funcional
+
+════════════════════════════════════════════════════════════════════════════════

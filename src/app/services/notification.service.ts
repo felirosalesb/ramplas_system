@@ -1,4 +1,58 @@
 // src/app/services/notification.service.ts
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * SERVICIO DE NOTIFICACIONES - Sistema de Gestión de Ramplas
+ * ═══════════════════════════════════════════════════════════════════════════
+ * 
+ * Gestiona el sistema completo de notificaciones de la aplicación.
+ * 
+ * TIPOS DE NOTIFICACIONES:
+ * ─────────────────────────────────────────────────────────────────────────
+ * 1. Notificaciones en App (PopupNotification):
+ *    - Aparecen en el componente notificaciones
+ *    - Persistentes en localStorage
+ *    - Filtradas por rol de usuario
+ * 
+ * 2. Notificaciones Nativas del Navegador:
+ *    - Requieren permiso del usuario
+ *    - Aparecen en el sistema operativo
+ * 
+ * 3. Snackbars (Material):
+ *    - Mensajes temporales en la parte inferior
+ *    - Para feedback inmediato
+ * 
+ * 4. Microsoft Teams (Opcional):
+ *    - Webhooks de Teams
+ *    - Configurar teamsWebhookUrl en environment
+ * 
+ * SISTEMA DE PRIORIDADES:
+ * ─────────────────────────────────────────────────────────────────────────
+ * • baja: Informativas
+ * • media: Requieren atención
+ * • alta: Urgentes
+ * • critica: Requieren acción inmediata
+ * 
+ * FILTRADO POR ROL:
+ * ─────────────────────────────────────────────────────────────────────────
+ * Las notificaciones se filtran automáticamente según el rol del usuario.
+ * Configurar rol con setRolUsuario() al iniciar sesión.
+ * 
+ * USO TÍPICO:
+ * ─────────────────────────────────────────────────────────────────────────
+ * constructor(private notificationService: NotificationService) {
+ *   this.notificationService.setRolUsuario('cd');
+ * }
+ * 
+ * this.notificationService.agregarNotificacion(
+ *   'Nueva solicitud de rampla',
+ *   ticketId,
+ *   'info',
+ *   'media',
+ *   ['cd', 'admin']
+ * );
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -11,6 +65,11 @@ import { NotificacionConfig } from '../models/models';
 export type RolUsuario = 'planta' | 'cd' | 'admin' | 'galpon';
 export type PrioridadNotificacion = 'baja' | 'media' | 'alta' | 'critica';
 
+/**
+ * Interfaz para notificaciones popup en la aplicación.
+ * Estas notificaciones se muestran en el componente de notificaciones
+ * y se persisten en localStorage.
+ */
 export interface PopupNotification {
     id: string;
     mensaje: string;
@@ -31,8 +90,10 @@ export interface PopupNotification {
     providedIn: 'root'
 })
 export class NotificationService {
+    // Observable de notificaciones activas
     private notificacionesSubject = new BehaviorSubject<PopupNotification[]>([]);
     public notificaciones$ = this.notificacionesSubject.asObservable();
+
     // Evento para nuevas notificaciones (para UI: animaciones, etc.)
     private nuevoEventoSubject = new BehaviorSubject<PopupNotification | null>(null);
     public nuevoEvento$ = this.nuevoEventoSubject.asObservable();
@@ -41,7 +102,10 @@ export class NotificationService {
     private rolUsuarioActual: RolUsuario | null = null;
     private muted = false; // Silenciar sonidos y notificaciones nativas
 
-    // Webhook de Microsoft Teams (configurar en environment)
+    // ⚠️ Webhook de Microsoft Teams - OPCIONAL
+    // Configurar en environment.ts si se usa Teams
+    // Dejar vacío ('') si no se utiliza
+    // Ver: CONFIGURACION_PENDIENTE.txt para más detalles
     private teamsWebhookUrl = '';
 
     constructor(
@@ -50,13 +114,26 @@ export class NotificationService {
         private dialog: MatDialog,
         private http: HttpClient
     ) {
+        // Cargar notificaciones persistidas del localStorage
         this.cargarNotificacionesGuardadas();
+
+        // Solicitar permisos de notificaciones del navegador
         this.solicitarPermisoNotificaciones();
+
+        // Verificar si el usuario tiene el modo silencioso activado
         this.muted = localStorage.getItem('notifMuted') === '1';
     }
 
-    // ==================== CONFIGURACIÓN ====================
+    // ═══════════════════════════════════════════════════════════════════════
+    // CONFIGURACIÓN
+    // ═══════════════════════════════════════════════════════════════════════
 
+    /**
+     * Configura el rol del usuario actual para filtrar notificaciones.
+     * IMPORTANTE: Llamar este método inmediatamente después del login.
+     * 
+     * @param rol - Rol del usuario ('planta', 'cd', 'admin', 'galpon')
+     */
     setRolUsuario(rol: RolUsuario): void {
         this.rolUsuarioActual = rol;
         console.log('📋 Rol de usuario configurado:', rol);

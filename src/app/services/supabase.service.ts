@@ -1,4 +1,40 @@
 // src/app/services/supabase.service.ts
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * SERVICIO PRINCIPAL DE SUPABASE - Sistema de Gestión de Ramplas
+ * ═══════════════════════════════════════════════════════════════════════════
+ * 
+ * Este servicio centraliza TODA la lógica de negocio y acceso a la base de datos
+ * a través de Supabase. Es el núcleo del sistema.
+ * 
+ * RESPONSABILIDADES:
+ * ─────────────────────────────────────────────────────────────────────────
+ * ✓ Autenticación de usuarios (login/logout)
+ * ✓ Gestión completa de tickets (crear, actualizar, cambiar estados)
+ * ✓ Gestión de ramplas (asignar, liberar, CRUD)
+ * ✓ Gestión de muelles (asignar, liberar, CRUD)
+ * ✓ Auditoría (registro automático de cambios de estado)
+ * ✓ Notificaciones en tiempo real (Supabase Realtime)
+ * ✓ Validaciones de negocio
+ * 
+ * IMPORTANTE:
+ * ─────────────────────────────────────────────────────────────────────────
+ * • Todos los cambios en la BD DEBEN pasar por este servicio
+ * • Cada cambio de estado registra automáticamente en tabla registros_tiempo
+ * • Las notificaciones se envían a través de NotificationService
+ * • Los métodos privados registrarTiempo() son críticos para auditoría
+ * 
+ * FLUJOS PRINCIPALES:
+ * ─────────────────────────────────────────────────────────────────────────
+ * 1. Retiro de Pallets: crearTicketPlanta → asignarRampla → confirmarLlegadaRampla
+ *    → finalizarCarga → asignarMuelleCD → iniciarDescarga → finalizarDescarga
+ * 
+ * 2. Pallets Vacíos: crearTicketPlanta → aprobarSolicitudGalpon → asignarRampla
+ *    → finalizarCargaGalpon → confirmarLlegadaRampla → finalizarDescarga
+ * 
+ * Ver documentación completa en: docs/DOCUMENTACION_TECNICA_COMPLEMENTARIA.md
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
 import { Injectable } from '@angular/core';
 import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 import { BehaviorSubject, Observable } from 'rxjs';
@@ -19,7 +55,11 @@ import {
     providedIn: 'root'
 })
 export class SupabaseService {
+    // Cliente de Supabase - Configurado con credenciales de environment
     private supabase: SupabaseClient;
+
+    // BehaviorSubject para estado de autenticación reactivo
+    // Componentes se suscriben a currentUser$ para conocer el usuario actual
     private currentUserSubject = new BehaviorSubject<User | null>(null);
     public currentUser$ = this.currentUserSubject.asObservable();
 
@@ -29,23 +69,34 @@ export class SupabaseService {
             keyLength: environment.supabaseKey?.length
         });
 
+        // Inicializar cliente de Supabase
+        // IMPORTANTE: Las credenciales vienen de environment.ts/environment.prod.ts
+        // Ver CONFIGURACION_PENDIENTE.txt para actualizar credenciales
         this.supabase = createClient(
             environment.supabaseUrl,
             environment.supabaseKey
         );
 
+        // Obtener usuario actual si ya está autenticado (sesión persistente)
         this.supabase.auth.getUser().then(({ data }) => {
             console.log('Usuario inicial obtenido:', data.user?.id);
             this.currentUserSubject.next(data.user);
         });
 
+        // Escuchar cambios en el estado de autenticación
+        // Se dispara en login, logout, refresh de token, etc.
         this.supabase.auth.onAuthStateChange((event, session) => {
             console.log('Auth state changed:', event, session?.user?.id);
             this.currentUserSubject.next(session?.user ?? null);
         });
     }
 
-    // ==================== AUTENTICACIÓN ====================
+    // ═══════════════════════════════════════════════════════════════════════
+    // AUTENTICACIÓN
+    // ═══════════════════════════════════════════════════════════════════════
+    // Métodos para login/logout y gestión de usuarios
+    // Los usuarios deben existir en Supabase Auth Y en la tabla 'usuarios'
+    // ───────────────────────────────────────────────────────────────────────
 
     async signIn(email: string, password: string) {
         return await this.supabase.auth.signInWithPassword({ email, password });
@@ -55,10 +106,21 @@ export class SupabaseService {
         return await this.supabase.auth.signOut();
     }
 
+    /**
+     * Obtiene el usuario actualmente autenticado desde el BehaviorSubject.
+     * Este método es síncrono y devuelve el estado actual de autenticación.
+     */
     getCurrentUser(): User | null {
         return this.currentUserSubject.value;
     }
 
+    /**
+     * Obtiene los datos completos del usuario desde la tabla 'usuarios'.
+     * Incluye rol, nombre, nombre_planta, etc.
+     * 
+     * @param userId - UUID del usuario (debe coincidir con auth.users)
+     * @returns Datos del usuario o null si no existe
+     */
     async obtenerUsuarioPorId(userId: string) {
         console.log('Buscando usuario en tabla usuarios con ID:', userId);
         const { data, error } = await this.supabase
@@ -77,8 +139,38 @@ export class SupabaseService {
         return data;
     }
 
-    // ==================== TICKETS ====================
+    // ═══════════════════════════════════════════════════════════════════════
+    // GESTIÓN DE TICKETS
+    // ═══════════════════════════════════════════════════════════════════════
+    // Los tickets son el núcleo del sistema. Representan solicitudes de ramplas.
+    // 
+    // TIPOS DE TICKETS:
+    //   • "Retiro pallets producción": Retirar pallets llenos desde planta
+    //   • "Solicitar Pallets vacíos": Solicitar pallets vacíos desde galpón
+    // 
+    // ESTADOS (ver models.ts para lista completa):
+    //   Flujo normal: Pendiente Asignación → En Tránsito → En Planta → 
+    //                 Carga → Espera Chofer → Muelle CD → Descarga → Libre
+    //   Excepciones: Rechazada, Cancelado por CD
+    // 
+    // IMPORTANTE: Cada cambio de estado registra automáticamente en registros_tiempo
+    // ───────────────────────────────────────────────────────────────────────
 
+    /**
+     * Crea un nuevo ticket desde la Planta.
+     * 
+     * FLUJO:
+     * 1. Verifica usuario autenticado
+     * 2. Obtiene nombre_planta del usuario
+     * 3. Define estado inicial según tipo:
+     *    - "Retiro pallets producción" → "Pendiente Asignación"
+     *    - "Solicitar Pallets vacíos" → "Pendiente Aprobación Galpón"
+     * 4. Registra estado inicial en registros_tiempo
+     * 
+     * @param dto - Datos del ticket (tipo, cantidad, muelle)
+     * @returns Promise<Ticket> - Ticket creado
+     * @throws Error si usuario no autenticado
+     */
     async crearTicketPlanta(dto: CreateTicketDTO): Promise<Ticket> {
         const user = this.getCurrentUser();
         if (!user) {
